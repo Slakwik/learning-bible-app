@@ -120,7 +120,7 @@ class LessonActivity : BaseActivity() {
         val content = screen(Courses.name(lesson.course))
         editorContent = content
         val saved = record ?: return
-        content.addView(text(lesson.title, 28, true))
+        content.addView(text(lesson.title, 24, true))
         content.addView(text(lesson.reference, 16, muted = true))
         content.addView(text(studyClass?.let { "Класс: ${it.name} · Ведущий: ${it.leader}" }
             ?: "Личное изучение", 15, true))
@@ -128,11 +128,13 @@ class LessonActivity : BaseActivity() {
         else if (!canWrite) content.addView(text("Только чтение: класс архивирован или вы не участник.", 16, true))
         val marks = getSharedPreferences("bookmarks", MODE_PRIVATE)
         val key = owner + ":" + positionKey()
-        if (!reviewing) content.addView(action(if (marks.getBoolean(key, false)) "Убрать закладку" else "В закладки", false) {
+        val readingControls = LinearLayout(this)
+        if (!reviewing) readingControls.addView(action(if (marks.getBoolean(key, false)) "В закладках" else "Закладка", false) {
             marks.edit().putBoolean(key, !marks.getBoolean(key, false)).apply()
             load()
-        })
-        content.addView(action("Оформление чтения", false) { launchSettings() })
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        readingControls.addView(action("Оформление", false) { launchSettings() }, LinearLayout.LayoutParams(0, -2, 1f))
+        content.addView(readingControls)
         status = text(if (reviewing) "Ответы класса загружены с сайта · изменения недоступны"
             else if (saved.remoteConflict != null) "Есть две версии — сравните их ниже."
             else if (owner == AnswerStore.GUEST) "Черновики сохраняются только на этом телефоне."
@@ -171,9 +173,15 @@ class LessonActivity : BaseActivity() {
                 }
                 is LessonBlock.Question -> card(content) {
                     val label = HtmlCompat.fromHtml(block.label, HtmlCompat.FROM_HTML_MODE_LEGACY)
-                    addView(text(label, prefs.fontSize, true))
-                    val edit = input(this, "Ваш ответ · " + block.id, true)
+                    val prompt = text(label, prefs.fontSize, true)
+                    addView(prompt)
+                    if (!canWrite) {
+                        addView(text(saved.values[block.id]?.takeIf { it.isNotBlank() } ?: "Ответ пока не добавлен", prefs.fontSize))
+                        return@card
+                    }
+                    val edit = input(this, "Ответ на вопрос " + block.id.removePrefix("q"), true)
                     edit.id = View.generateViewId()
+                    prompt.labelFor = edit.id
                     edit.isSaveEnabled = false // SQLite is the source of truth, not stale view hierarchy state.
                     edit.textSize = prefs.fontSize.toFloat()
                     edit.setText(saved.values[block.id].orEmpty())
@@ -200,11 +208,11 @@ class LessonActivity : BaseActivity() {
                 }
             }
         }
-        if (owner == AnswerStore.GUEST) content.addView(action("Войти в аккаунт сайта") {
+        if (owner == AnswerStore.GUEST) root.addView(action("Войти в аккаунт сайта") {
             confirm("Войти?", "Гостевые черновики останутся отдельно на телефоне и не будут автоматически отправлены в аккаунт.", "Войти") {
                 startActivity(Intent(this, LoginActivity::class.java))
             }
-        }) else if (!reviewing) content.addView(action("Синхронизировать сейчас") {
+        }) else if (!reviewing) root.addView(action(if (classId == null) "Синхронизировать" else "Синхронизировать класс") {
             // Do not allow typing during an explicit refresh of the lesson.
             if (writeFailed) { message("Сначала сохраните текст: возникла ошибка памяти."); return@action }
             loading = true
@@ -221,6 +229,8 @@ class LessonActivity : BaseActivity() {
                     }
                 }
             }
+        }.apply {
+            (layoutParams as LinearLayout.LayoutParams).apply { marginStart = dp(16); marginEnd = dp(16); bottomMargin = dp(8) }
         })
         content.addView(text(if (classId == null) "Это личные ответы. Для работы с группой откройте раздел «Класс»."
             else "Ответы сохраняются в этот класс и доступны его ведущему на сайте.", 13, muted = true))

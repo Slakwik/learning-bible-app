@@ -34,7 +34,7 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         course = savedInstanceState?.getString("course")
-        classTab = savedInstanceState?.getBoolean("class_tab") ?: false
+        classTab = savedInstanceState?.getBoolean("class_tab") ?: (intent.getIntExtra("destination", 1) == 2)
         selectedClassId = savedInstanceState?.getString("class_id")
         query = savedInstanceState?.getString("query").orEmpty()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -49,6 +49,12 @@ class MainActivity : BaseActivity() {
                 }
             }
         })
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        classTab = intent.getIntExtra("destination", 1) == 2
+        course = null; selectedClassId = null; studentsMode = false; selectedStudent = null
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("course", course)
@@ -105,33 +111,26 @@ class MainActivity : BaseActivity() {
         }
     }
     private fun build() {
-        val content = screen(if (classTab) "Класс" else "Изучение Библии", false)
+        val content = screen(if (classTab) "Класс" else "Курсы", false)
         if (!classTab) {
-            card(content) {
-                addView(text("ЛИЧНОЕ ИЗУЧЕНИЕ", 12, true, true))
-                addView(text("Писание.\nВ вашем ритме.", 30, true))
-                addView(text("Все уроки доступны без интернета. Для работы с группой откройте «Класс».", 15, muted = true))
-                val last = prefs.lastLesson(uid())?.let { slug -> lessons.find { it.slug == slug } }
-                if (last != null) addView(action("Продолжить: " + last.title) { open(last) })
-            }
+            notice(content, "Учиться в своём ритме", "${lessons.groupBy { it.course }.size} курс · ${lessons.size} уроков на телефоне")
+            val last = prefs.lastLesson(uid())?.let { slug -> lessons.find { it.slug == slug } }
+            if (last != null) listItem(content, "Продолжить изучение", last.title, R.drawable.ic_courses) { open(last) }
+            content.addView(text("Личные ответы — здесь. Занятия с группой — в разделе «Класс».", 14, muted = true))
             val search = input(content, "Найти курс, урок или отрывок")
             search.setText(query)
             search.doAfterTextChanged { query = it.toString(); renderResults() }
         }
         results = column()
         content.addView(results)
-        val navigation = BottomNavigationView(this).apply {
-            setBackgroundColor(palette().surface)
-            menu.add(0, 1, 0, "Курсы").setIcon(android.R.drawable.ic_menu_agenda)
-            menu.add(0, 2, 1, "Класс").setIcon(android.R.drawable.ic_menu_myplaces)
-            menu.add(0, 3, 2, "Настройки").setIcon(android.R.drawable.ic_menu_preferences)
-            selectedItemId = if (classTab) 2 else 1
-            setOnItemSelectedListener { item ->
-                if (item.itemId == 3) { launchSettings(); false }
-                else { classTab = item.itemId == 2; course = null; selectedClassId = null; studentsMode = false; selectedStudent = null; students = null; build(); true }
+        navigation(if (classTab) 2 else 1) { destination ->
+            if (destination == 3) launchSettings(rootDestination = true)
+            else {
+                classTab = destination == 2; course = null; selectedClassId = null
+                studentsMode = false; selectedStudent = null; students = null
+                build()
             }
         }
-        root.addView(navigation)
         renderResults()
     }
     private fun renderResults() {
@@ -152,7 +151,7 @@ class MainActivity : BaseActivity() {
     }
     private fun renderClasses() {
         if (uid() == AnswerStore.GUEST) {
-            results.addView(text("Войдите, чтобы увидеть свои классы и их программы.", 20, true))
+            notice(results, "Учитесь вместе", "Войдите в аккаунт сайта, чтобы открыть свои классы, программу и ответы группы.")
             results.addView(action("Войти") { startActivity(Intent(this, LoginActivity::class.java)) })
             return
         }
@@ -162,7 +161,7 @@ class MainActivity : BaseActivity() {
         val available = classes
         if (available == null) { results.addView(text("Загрузка доступных классов…", 18)); return }
         if (available.isEmpty()) {
-            results.addView(text("У вас пока нет доступных классов. Обратитесь к ведущему.", 18))
+            notice(results, "Вы пока не в классе", "Попросите ведущего добавить вас в группу. После этого её программа появится здесь.")
             results.addView(action("Обновить", false) { refresh() }); return
         }
         val selected = available.find { it.id == selectedClassId }
@@ -170,19 +169,18 @@ class MainActivity : BaseActivity() {
             if (selectedClassId != null) { selectedClassId = null; course = null }
             results.addView(text("Ваши классы", 26, true))
             results.addView(text("Ответы из этого раздела сохраняются в выбранный класс на сайте.", 15, muted = true))
-            available.forEach { item -> card(results) {
-                addView(text(item.name, 22, true))
-                addView(text("Ведущий: ${item.leader}", 15))
-                addView(text(item.schedule(), 14, muted = true))
-                addView(text("Уроков в программе: ${item.lessonSlugs.size}" + if (item.archived) " · Архив" else "", 14))
-                addView(action("Открыть класс") { selectedClassId = item.id; course = null; studentsMode = false; students = null; selectedStudent = null; renderResults() })
-            } }
+            available.forEach { item ->
+                listItem(results, item.name, "${item.leader}\n${item.schedule()}", R.drawable.ic_groups,
+                    if (item.archived) "Архив · ${item.lessonSlugs.size} уроков" else "${item.lessonSlugs.size} уроков · " + if (item.canManage) "Ведущий" else "Участник") {
+                    selectedClassId = item.id; course = null; studentsMode = false
+                    students = null; selectedStudent = null; renderResults()
+                }
+            }
             results.addView(action("Обновить список", false) { refresh() })
             return
         }
         results.addView(action("Все классы", false) { selectedClassId = null; course = null; studentsMode = false; selectedStudent = null; students = null; renderResults() })
-        results.addView(text(selected.name, 26, true))
-        results.addView(text("Ведущий: ${selected.leader}\n${selected.schedule()}", 15, muted = true))
+        notice(results, selected.name, "Ведущий: ${selected.leader}\n${selected.schedule()}")
         if (selected.place.isNotBlank()) results.addView(text(selected.place, 15))
         if (selected.archived) results.addView(text("Архивный класс · только чтение", 16, true))
         else if (uid() !in selected.members) results.addView(text("Вы управляете классом. Для собственных ответов нужно членство в нём.", 15))
@@ -242,11 +240,11 @@ class MainActivity : BaseActivity() {
         if (roster.isEmpty()) { results.addView(text("В классе пока нет учеников.", 18)); return }
         val student = selectedStudent
         if (student == null) {
-            roster.forEach { item -> card(results) {
-                addView(text(item.name, 20, true))
-                addView(text("Уроков с ответами: ${item.answeredSlugs.size} из ${group.lessonSlugs.size}", 14))
-                addView(action("Курсы и ответы", false) { selectedStudent = item; course = null; renderResults() })
-            } }
+            roster.forEach { item ->
+                listItem(results, item.name, "Уроков с ответами: ${item.answeredSlugs.size} из ${group.lessonSlugs.size}", R.drawable.ic_person, "Курсы и ответы") {
+                    selectedStudent = item; course = null; renderResults()
+                }
+            }
             results.addView(action("Обновить ответы", false) { students = null; renderResults() })
             return
         }
@@ -254,46 +252,41 @@ class MainActivity : BaseActivity() {
         results.addView(text(student.name, 24, true))
         val program = group.lessonSlugs.mapNotNull { slug -> lessons.find { it.slug == slug } }
         if (course == null) {
-            program.groupBy { it.course }.forEach { (id, items) -> card(results) {
-                addView(text(Courses.name(id), 21, true))
-                addView(text("С ответами: ${items.count { it.slug in student.answeredSlugs }} из ${items.size}", 14))
-                addView(action("Открыть курс", false) { course = id; renderResults() })
-            } }
+            program.groupBy { it.course }.forEach { (id, items) ->
+                listItem(results, Courses.name(id), "С ответами: ${items.count { it.slug in student.answeredSlugs }} из ${items.size}") {
+                    course = id; renderResults()
+                }
+            }
         } else {
             results.addView(action("Курсы ученика", false) { course = null; renderResults() })
-            program.filter { it.course == course }.forEach { lesson -> card(results) {
-                addView(text(lesson.title, 20, true))
-                addView(text(if (lesson.slug in student.answeredSlugs) "Есть ответы" else "Ответов пока нет", 14))
-                addView(action("Посмотреть ответы", false) {
+            program.filter { it.course == course }.forEach { lesson ->
+                listItem(results, lesson.title, lesson.reference, badge = if (lesson.slug in student.answeredSlugs) "Есть ответы" else "Ответов пока нет") {
                     startActivity(Intent(this@MainActivity, LessonActivity::class.java)
                         .putExtra("slug", lesson.slug).putExtra("classId", group.id)
                         .putExtra("studentUid", student.uid).putExtra("studentName", student.name))
-                })
-            } }
+                }
+            }
         }
     }
     private fun courseCards(selected: List<Lesson>) {
-        selected.groupBy { it.course }.forEach { (id, items) -> card(results) {
-            addView(text(Courses.name(id), 21, true))
-            addView(text("Уроков: ${items.size}", 14, muted = true))
-            addView(action("Открыть курс", false) { course = id; renderResults() })
-        } }
+        results.addLabel("Курсы")
+        selected.groupBy { it.course }.forEach { (id, items) ->
+            listItem(results, Courses.name(id), "Уроков в программе: ${items.size}") {
+                course = id; renderResults()
+            }
+        }
     }
     private fun lessonCard(lesson: Lesson, studyClass: StudyClass?) {
-        card(results) {
-            addView(text(lesson.title, 20, true))
-            addView(text(lesson.reference, 14, muted = true))
-            val record = records.find { it.slug == lesson.slug && it.classId == studyClass?.id }
-            val status = when {
-                record?.remoteConflict != null -> "Две версии ответа · нужен ваш выбор"
-                record?.dirty == true -> "Есть неотправленные изменения"
-                record?.values?.isNotEmpty() == true -> "Сохранено на телефоне · Ответов: ${record.values.size}"
-                studyClass != null -> "Ответы этого класса · проверка при открытии"
-                else -> "Личное изучение · можно читать офлайн"
-            }
-            addView(text(status, 13, muted = true))
-            addView(action(if (studyClass != null && !studyClass.canWrite(uid(), lesson.slug)) "Читать" else "Читать и отвечать", false) { open(lesson, studyClass) })
+        val record = records.find { it.slug == lesson.slug && it.classId == studyClass?.id }
+        val status = when {
+            record?.remoteConflict != null -> "Нужно сравнить две версии"
+            record?.dirty == true -> "Ожидает отправки"
+            record?.values?.isNotEmpty() == true -> "С ответами · ${record.values.size}"
+            studyClass != null && !studyClass.canWrite(uid(), lesson.slug) -> "Только чтение"
+            studyClass != null -> "Ответы класса"
+            else -> "Личное изучение"
         }
+        listItem(results, lesson.title, lesson.reference, badge = status) { open(lesson, studyClass) }
     }
     private fun open(lesson: Lesson, studyClass: StudyClass? = null) {
         startActivity(Intent(this, LessonActivity::class.java).putExtra("slug", lesson.slug).putExtra("classId", studyClass?.id))

@@ -54,13 +54,13 @@ class SettingsActivity : BaseActivity() {
     override fun onResume() { super.onResume(); render() }
 
     private fun render() {
-        val content = screen("Настройки")
+        val content = screen("Настройки", back = !intent.getBooleanExtra("rootDestination", false))
         val user = FirebaseAuth.getInstance().currentUser
         val owner = user?.uid ?: AnswerStore.GUEST
         if (lastMessage.isNotBlank()) content.addView(text(lastMessage, 15, true))
         content.addLabel("АККАУНТ")
         card(content) {
-            addView(text(user?.email ?: "Гостевой режим", 20, true))
+            addView(text(user?.email ?: "Ваш аккаунт", 20, true))
             addView(text(if (user == null) "Читайте и делайте заметки без входа. Гостевые черновики не отправляются на сайт."
                 else "Личные ответы синхронизируются с аккаунтом learning.spbchurch.ru.", 14, muted = true))
             if (user == null) addView(action("Войти") { startActivity(Intent(this@SettingsActivity, LoginActivity::class.java)) })
@@ -90,7 +90,7 @@ class SettingsActivity : BaseActivity() {
         card(content) {
             val themes = listOf("Как в системе", "Светлая", "Тёмная", "Бумага")
             val themeKeys = listOf("system", "light", "dark", "paper")
-            addView(action("Тема · " + themes[themeKeys.indexOf(prefs.theme).coerceAtLeast(0)], false) {
+            addView(action("Оформление: " + themes[themeKeys.indexOf(prefs.theme).coerceAtLeast(0)], false) {
                 choose("Тема приложения", themes, themeKeys.indexOf(prefs.theme)) { prefs.theme = themeKeys[it]; recreate() }
             })
             addView(action("Размер текста · " + prefs.fontSize, false) {
@@ -150,7 +150,7 @@ class SettingsActivity : BaseActivity() {
                     render()
                 }
             }.apply { isEnabled = user != null && !busy })
-            addView(text("При конфликте обе версии сохраняются. Откройте урок во вкладке «Моё», чтобы сравнить их. Ответы классов эта версия приложения не синхронизирует.", 14, muted = true))
+            addView(text("Личные ответы и ответы классов синхронизируются отдельно. При конфликте откройте соответствующий урок и выберите нужную версию.", 14, muted = true))
         }
         content.addLabel("КУРСЫ БЕЗ ИНТЕРНЕТА")
         card(content) {
@@ -202,7 +202,12 @@ class SettingsActivity : BaseActivity() {
             addView(action("Открыть сайт", false) { openUrl("https://learning.spbchurch.ru/") })
             addView(action("Исходный проект сайта", false) { openUrl("https://github.com/Slakwik/bible-learning") })
             addView(action("Код Android-приложения", false) { openUrl("https://github.com/Slakwik/learning-bible-app") })
-            addView(text("Материалы: Санкт-Петербургский Центр «Духовное Возрождение». Интерфейс нативный, без WebView. Сервер ответов — существующий Firebase-проект сайта.", 13, muted = true))
+            addView(text("Материалы: Санкт-Петербургский Центр «Духовное Возрождение». Приложение связано с вашим аккаунтом на сайте.", 13, muted = true))
+        }
+        if (intent.getBooleanExtra("rootDestination", false)) navigation(3) { destination ->
+            startActivity(Intent(this, MainActivity::class.java).putExtra("destination", destination)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            finish()
         }
     }
     private fun choose(title: String, labels: List<String>, selected: Int, update: (Int) -> Unit) {

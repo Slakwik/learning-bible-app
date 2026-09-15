@@ -12,8 +12,8 @@ class LoginActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val content = screen("Вход")
-        content.addView(text("Продолжайте\nс любого устройства.", 28, true))
-        content.addView(text("Используйте почту и пароль от learning.spbchurch.ru. Первый вход требует интернета.", 16, muted = true))
+        content.addView(text("Рады видеть вас", 26, true))
+        content.addView(text("Войдите в аккаунт сайта, чтобы открыть свой класс и продолжить занятия.", 16, muted = true))
         card(content) {
             val email = input(this, "Электронная почта")
             email.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
