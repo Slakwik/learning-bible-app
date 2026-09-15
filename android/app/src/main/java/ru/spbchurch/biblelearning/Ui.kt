@@ -71,11 +71,6 @@ open class BaseActivity : AppCompatActivity() {
             view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
             WindowInsetsCompat.CONSUMED
         }
-        WindowCompat.getInsetsController(window, root).apply {
-            val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
-            isAppearanceLightStatusBars = light
-            isAppearanceLightNavigationBars = light
-        }
         val header = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(8), dp(4), dp(12), dp(4))
@@ -84,6 +79,11 @@ open class BaseActivity : AppCompatActivity() {
         header.addView(text(title, 20, true), LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(header)
         setContentView(root)
+        WindowCompat.getInsetsController(window, root).apply {
+            val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
+            isAppearanceLightStatusBars = light
+            isAppearanceLightNavigationBars = light
+        }
         ViewCompat.requestApplyInsets(root)
         val scroll = ScrollView(this).apply { id = R.id.screen_scroll; isFillViewport = true }
         val content = column().apply { setPadding(dp(20), dp(8), dp(20), dp(28)) }
