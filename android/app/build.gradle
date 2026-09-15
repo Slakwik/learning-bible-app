@@ -25,12 +25,12 @@ android { namespace 'ru.spbchurch.biblelearning'; compileSdk 35
         }
     }
     sourceSets { main { assets.srcDir("$buildDir/generated/assets") } }
-    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 6; versionName '0.4.0'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 7; versionName '0.4.1'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'Изучение Библии'] }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = '17' }
     buildFeatures { buildConfig true }
     testOptions { unitTests.includeAndroidResources = true }
-    buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro' } }
+    buildTypes { release { applicationIdSuffix '.mobile'; manifestPlaceholders = [appLabel: 'Библия · Онлайн']; signingConfig signingConfigs.release; minifyEnabled false; proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro' } }
 }
 tasks.named('preBuild').configure { dependsOn(copyLessons) }
 

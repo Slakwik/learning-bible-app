@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           path = Path('android/app/src/main/AndroidManifest.xml')
           source = path.read_text()
-          source = source.replace('android:label="Изучение Библии"', 'android:label="Библия · Класс"')
+          source = source.replace('android:label="${appLabel}"', 'android:label="Библия · Класс"')
           path.write_text(source)
           PY
       - name: Build diagnostic APK
