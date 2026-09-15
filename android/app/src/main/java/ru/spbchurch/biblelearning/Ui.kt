@@ -53,7 +53,7 @@ open class BaseActivity : AppCompatActivity() {
         appearance = prefs.appearanceKey()
     }
     override fun onSaveInstanceState(outState: Bundle) {
-        if (::root.isInitialized) outState.putInt("screen_scroll", root.findViewById<ScrollView>(0x5001)?.scrollY ?: 0)
+        if (::root.isInitialized) outState.putInt("screen_scroll", root.findViewById<ScrollView>(R.id.screen_scroll)?.scrollY ?: 0)
         super.onSaveInstanceState(outState)
     }
     override fun onResume() {
@@ -86,7 +86,7 @@ open class BaseActivity : AppCompatActivity() {
         root.addView(header)
         setContentView(root)
         ViewCompat.requestApplyInsets(root)
-        val scroll = ScrollView(this).apply { id = 0x5001; isFillViewport = true }
+        val scroll = ScrollView(this).apply { id = R.id.screen_scroll; isFillViewport = true }
         val content = column().apply { setPadding(dp(20), dp(8), dp(20), dp(28)) }
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))

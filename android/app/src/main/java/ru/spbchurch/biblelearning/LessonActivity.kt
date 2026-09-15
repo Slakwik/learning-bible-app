@@ -181,7 +181,7 @@ class LessonActivity : BaseActivity() {
             }
         })
         content.addView(text("Это личные ответы. Ответы класса доступны отдельно на сайте.", 13, muted = true))
-        val scroll = root.findViewById<android.widget.ScrollView>(0x5001)
+        val scroll = root.findViewById<android.widget.ScrollView>(R.id.screen_scroll)
         val position = prefs.readingPosition(owner, lesson.slug)
         scroll.post {
             val range = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(0)
@@ -190,7 +190,7 @@ class LessonActivity : BaseActivity() {
     }
     private fun savePosition() {
         if (!::lesson.isInitialized || editorContent == null) return
-        val scroll = root.findViewById<android.widget.ScrollView>(0x5001) ?: return
+        val scroll = root.findViewById<android.widget.ScrollView>(R.id.screen_scroll) ?: return
         val range = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(1)
         prefs.rememberPosition(owner, lesson.slug, scroll.scrollY.toFloat() / range)
     }
