@@ -90,7 +90,7 @@ object SyncEngine {
                 val ref = collection.document(id)
                 val outcome = db.runTransaction { tx ->
                     checkOwner()
-                    if (classId != null) {
+                    run {
                         val currentClass = StudyClass.from(tx.get(db.collection("classes").document(classId)))
                         check(currentClass.canWrite(uid, snapshot.slug)) { "Class access changed" }
                     }

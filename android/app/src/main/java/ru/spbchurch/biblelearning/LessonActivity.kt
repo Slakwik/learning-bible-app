@@ -145,7 +145,7 @@ class LessonActivity : BaseActivity() {
         content.addView(text(lesson.title, 24, true))
         content.addView(text(lesson.reference, 16, muted = true))
         content.addView(text(studyClass?.let { "Класс: ${it.name} · Ведущий: ${it.leader}" }
-            ?: "Личное изучение", 15, true))
+            ?: "Урок класса", 15, true))
         if (reviewing) content.addView(text("Ответы ученика: ${intent.getStringExtra("studentName").orEmpty()} · только просмотр", 16, true))
         else if (!canWrite) content.addView(text("Только чтение: класс архивирован или вы не участник.", 16, true))
         val marks = getSharedPreferences("bookmarks", MODE_PRIVATE)
@@ -181,7 +181,7 @@ class LessonActivity : BaseActivity() {
                 }
             }
         }
-        lesson.blocks.forEach { block ->
+        LessonAccess.blocks(owner != AnswerStore.GUEST, studyClass != null, lesson.blocks).forEach { block ->
             when (block) {
                 is LessonBlock.Reading -> {
                     val view = text("", prefs.fontSize).apply {
@@ -230,11 +230,7 @@ class LessonActivity : BaseActivity() {
                 }
             }
         }
-        if (owner == AnswerStore.GUEST) root.addView(action("Войти в аккаунт сайта") {
-            confirm("Войти?", "Гостевые черновики останутся отдельно на телефоне и не будут автоматически отправлены в аккаунт.", "Войти") {
-                startActivity(Intent(this, LoginActivity::class.java))
-            }
-        }) else if (!reviewing) root.addView(action(if (classId == null) "Синхронизировать" else "Синхронизировать класс") {
+        if (!reviewing) root.addView(action("Синхронизировать класс") {
             // Do not allow typing during an explicit refresh of the lesson.
             if (writeFailed) { message("Сначала сохраните текст: возникла ошибка памяти."); return@action }
             loading = true
@@ -245,7 +241,7 @@ class LessonActivity : BaseActivity() {
                 runOnUiThread {
                     lifecycleScope.launch {
                         val report = withContext(Dispatchers.IO) { SyncEngine.sync(appContext, explicit = true, onlyClassId = classId) }
-                        message((studyClass?.let { "Класс: ${it.name}\n" } ?: "Личное изучение и доступные классы\n") + report.description())
+                        message((studyClass?.let { "Класс: ${it.name}\n" } ?: "Урок класса\n") + report.description())
                         loading = false
                         load()
                     }
@@ -254,8 +250,7 @@ class LessonActivity : BaseActivity() {
         }.apply {
             (layoutParams as LinearLayout.LayoutParams).apply { marginStart = dp(16); marginEnd = dp(16); bottomMargin = dp(8) }
         })
-        content.addView(text(if (classId == null) "Это личные ответы. Для работы с группой откройте раздел «Класс»."
-            else "Ответы сохраняются в этот класс и доступны его ведущему на сайте.", 13, muted = true))
+        content.addView(text("Ответы сохраняются в этот класс и доступны его ведущему на сайте.", 13, muted = true))
         studyClass?.let { group ->
             val index = group.lessonSlugs.indexOf(lesson.slug)
             listOf(-1, 1).forEach { step ->
