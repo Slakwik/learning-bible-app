@@ -9,7 +9,6 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -161,7 +160,7 @@ fun Context.input(parent: LinearLayout, label: String, multiline: Boolean = fals
             if (multiline) android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE else 0
         if (multiline) { minLines = 3; gravity = Gravity.TOP }
     }
-    box.addView(edit, ViewGroup.LayoutParams(-1, -2))
+    box.addView(edit, LinearLayout.LayoutParams(-1, -2))
     parent.addView(box, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(10) })
     return edit
 }
