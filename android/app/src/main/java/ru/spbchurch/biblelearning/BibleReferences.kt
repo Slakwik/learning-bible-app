@@ -86,8 +86,8 @@ object BibleReferences {
     }
     private const val point = "[0-9]{1,3}(?:\\s*[:.]\\s*[0-9]{1,3})?"
     private const val location = "$point(?:\\s*[-–—]\\s*$point)?"
-    private val explicit = Regex("(?<![\\p{L}\\d])($names)\\s*($location)(?![\\d:])", RegexOption.IGNORE_CASE)
-    private val contextual = Regex("(?<![\\p{L}\\d/:.])([0-9]{1,3}\\s*:\\s*[0-9]{1,3}(?:\\s*[-–—]\\s*$point)?)(?![\\d:])")
+    private val explicit = Regex("($names)\\s*($location)(?![0-9:])", RegexOption.IGNORE_CASE)
+    private val contextual = Regex("([0-9]{1,3}\\s*:\\s*[0-9]{1,3}(?:\\s*[-–—]\\s*$point)?)(?![0-9:])")
     private fun valid(raw: String): String? {
         val value = raw.replace(Regex("\\s+"), "").replace(':', '.').replace('–', '-').replace('—', '-')
         val numbers = value.split('.', '-').mapNotNull { it.toIntOrNull() }
@@ -95,11 +95,13 @@ object BibleReferences {
     }
     fun find(text: String, defaultBook: String? = null): List<BibleReference> {
         val named = explicit.findAll(text).mapNotNull { match ->
+            if (match.range.first > 0 && text[match.range.first - 1].isLetterOrDigit()) return@mapNotNull null
             val book = aliases[normalize(match.groupValues[1])] ?: return@mapNotNull null
             val loc = valid(match.groupValues[2]) ?: return@mapNotNull null
             BibleReference(match.range.first, match.range.last + 1, book, loc)
         }.toList()
         val implied = if (defaultBook in books.map { it.code }) contextual.findAll(text).mapNotNull { match ->
+            if (match.range.first > 0 && text[match.range.first - 1].let { it.isLetterOrDigit() || it in "/:." }) return@mapNotNull null
             if (named.any { match.range.first < it.end && match.range.last >= it.start }) return@mapNotNull null
             val loc = valid(match.value) ?: return@mapNotNull null
             BibleReference(match.range.first, match.range.last + 1, defaultBook!!, loc)
