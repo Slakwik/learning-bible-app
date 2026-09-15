@@ -2,6 +2,8 @@
 
 ## Android-приложение
 
+[Скачать тестовый APK 0.2.0-preview](https://github.com/Slakwik/learning-bible-app/releases/tag/preview-0.2.0) · [План улучшений](docs/android-roadmap.md)
+
 Этот репозиторий содержит предварительную нативную Android-версию проекта. Оригинальный веб-сайт и исходный проект: [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning). Описание приложения, настройки, проверки и ограничения: [android/README.md](android/README.md).
 
 Веб-платформа для совместного изучения Священного Писания, построенная на Jekyll 4.4.1 + Firebase. Подходит для домашних групп, воскресных школ и индивидуального изучения.
