@@ -13,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +24,10 @@ class LessonActivity : BaseActivity() {
     private lateinit var owner: String
     private lateinit var status: TextView
     private var record: AnswerRecord? = null
+    private val classId: String? get() = intent.getStringExtra("classId")?.takeIf { it.isNotBlank() }
+    private var studyClass: StudyClass? = null
+    private val canWrite: Boolean get() = classId == null || studyClass?.canWrite(owner, lesson.slug) == true
+    private fun positionKey() = classId?.let { "class:$it:${lesson.slug}" } ?: lesson.slug
     private var loading = false
     private var editingSession = false
     private var writeFailed = false
@@ -61,19 +67,35 @@ class LessonActivity : BaseActivity() {
         lifecycleScope.launch {
         // Let a sync already in flight finish before displaying its baseline.
         SyncEngine.awaitIdle()
+        try {
+            classId?.let { id ->
+                check(SyncEngine.connected(appContext, prefs.unmetered))
+                withTimeout(20_000) {
+                    studyClass = ClassRepository().get(owner, id)
+                    val slug = intent.getStringExtra("slug").orEmpty()
+                    check(slug in studyClass!!.lessonSlugs) { "Lesson no longer in class" }
+                    withContext(Dispatchers.IO) { SyncEngine.readClassLesson(appContext, owner, id, slug) }
+                }
+            }
+        } catch (e: CancellationException) {
+            if (e !is kotlinx.coroutines.TimeoutCancellationException) throw e
+            classLoadError(); return@launch
+        } catch (e: Exception) {
+            classLoadError(); return@launch
+        }
         // A barrier behind queued edits ensures navigation/recreation reads the durable latest values.
         LocalIo.executor.execute {
             val result = runCatching {
                 val item = LessonRepository(appContext).get(intent.getStringExtra("slug").orEmpty())
                     ?: error("Урок не найден")
-                item to AnswerStore.get(appContext).record(owner, item.slug)
+                item to AnswerStore.get(appContext).record(owner, item.slug, classId)
             }
             runOnUiThread {
                 loading = false
-                if (isDestroyed || isFinishing) return@runOnUiThread
+                if (isDestroyed || isFinishing || owner != (FirebaseAuth.getInstance().currentUser?.uid ?: AnswerStore.GUEST)) return@runOnUiThread
                 result.onSuccess { (item, answers) ->
                     lesson = item; record = answers
-                    prefs.remember(owner, lesson.slug)
+                    if (classId == null) prefs.remember(owner, lesson.slug)
                     build()
                 }.onFailure {
                     screen("Урок").addView(text("Не удалось открыть урок. Вернитесь в каталог и попробуйте ещё раз.", 18))
@@ -82,14 +104,25 @@ class LessonActivity : BaseActivity() {
         }
         }
     }
+    private fun classLoadError() {
+        loading = false
+        editorContent = null
+        val content = screen("Урок класса")
+        content.addView(text("Не удалось проверить доступ или загрузить ответы класса. Проверьте сеть и членство в классе. Черновики сохранены на телефоне и доступны для экспорта в настройках.", 18))
+        content.addView(action("Повторить") { load() })
+        content.addView(action("Настройки", false) { launchSettings() })
+    }
     private fun build() {
         val content = screen(Courses.name(lesson.course))
         editorContent = content
         val saved = record ?: return
         content.addView(text(lesson.title, 28, true))
         content.addView(text(lesson.reference, 16, muted = true))
+        content.addView(text(studyClass?.let { "Класс: ${it.name} · Ведущий: ${it.leader}" }
+            ?: "Личное изучение", 15, true))
+        if (!canWrite) content.addView(text("Только чтение: класс архивирован или вы не участник.", 16, true))
         val marks = getSharedPreferences("bookmarks", MODE_PRIVATE)
-        val key = owner + ":" + lesson.slug
+        val key = owner + ":" + positionKey()
         content.addView(action(if (marks.getBoolean(key, false)) "Убрать закладку" else "В закладки", false) {
             marks.edit().putBoolean(key, !marks.getBoolean(key, false)).apply()
             load()
@@ -112,8 +145,10 @@ class LessonActivity : BaseActivity() {
                         addView(text("На сайте:\n" + remote[id].orEmpty(), 16, muted = true))
                     }
                 }
-                addView(action("Оставить ответы телефона") { resolve(false) })
-                addView(action("Взять ответы сайта", false) { resolve(true) })
+                if (canWrite) {
+                    addView(action("Оставить ответы телефона") { resolve(false) })
+                    addView(action("Взять ответы сайта", false) { resolve(true) })
+                }
             }
         }
         lesson.blocks.forEach { block ->
@@ -136,14 +171,14 @@ class LessonActivity : BaseActivity() {
                     edit.isSaveEnabled = false // SQLite is the source of truth, not stale view hierarchy state.
                     edit.textSize = prefs.fontSize.toFloat()
                     edit.setText(saved.values[block.id].orEmpty())
-                    edit.isEnabled = saved.remoteConflict == null
+                    edit.isEnabled = canWrite && saved.remoteConflict == null
                     edit.doAfterTextChanged { value ->
                         val snapshot = value.toString()
                         status.text = "Сохраняется на телефоне…"
                         val slug = lesson.slug
                         val uid = owner
                         LocalIo.executor.execute {
-                            val result = runCatching { AnswerStore.get(appContext).edit(uid, slug, block.id, snapshot) }
+                            val result = runCatching { AnswerStore.get(appContext).edit(uid, slug, block.id, snapshot, classId) }
                             runOnUiThread {
                                 if (!isDestroyed) {
                                     if (result.isFailure) {
@@ -172,17 +207,29 @@ class LessonActivity : BaseActivity() {
             LocalIo.executor.execute {
                 runOnUiThread {
                     lifecycleScope.launch {
-                        val report = withContext(Dispatchers.IO) { SyncEngine.sync(appContext, explicit = true) }
-                        message(report.description())
+                        val report = withContext(Dispatchers.IO) { SyncEngine.sync(appContext, explicit = true, onlyClassId = classId) }
+                        message((studyClass?.let { "Класс: ${it.name}\n" } ?: "Личное изучение и доступные классы\n") + report.description())
                         loading = false
                         load()
                     }
                 }
             }
         })
-        content.addView(text("Это личные ответы. Ответы класса доступны отдельно на сайте.", 13, muted = true))
+        content.addView(text(if (classId == null) "Это личные ответы. Для работы с группой откройте раздел «Класс»."
+            else "Ответы сохраняются в этот класс и доступны его ведущему на сайте.", 13, muted = true))
+        studyClass?.let { group ->
+            val index = group.lessonSlugs.indexOf(lesson.slug)
+            listOf(-1, 1).forEach { step ->
+                group.lessonSlugs.getOrNull(index + step)?.let { slug ->
+                    content.addView(action(if (step < 0) "Предыдущий урок класса" else "Следующий урок класса", false) {
+                        startActivity(Intent(this, LessonActivity::class.java).putExtra("slug", slug).putExtra("classId", group.id))
+                        finish()
+                    })
+                }
+            }
+        }
         val scroll = root.findViewById<android.widget.ScrollView>(R.id.screen_scroll)
-        val position = prefs.readingPosition(owner, lesson.slug)
+        val position = prefs.readingPosition(owner, positionKey())
         scroll.post {
             val range = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(0)
             scroll.scrollTo(0, (range * position).toInt())
@@ -192,7 +239,7 @@ class LessonActivity : BaseActivity() {
         if (!::lesson.isInitialized || editorContent == null) return
         val scroll = root.findViewById<android.widget.ScrollView>(R.id.screen_scroll) ?: return
         val range = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(1)
-        prefs.rememberPosition(owner, lesson.slug, scroll.scrollY.toFloat() / range)
+        prefs.rememberPosition(owner, positionKey(), scroll.scrollY.toFloat() / range)
     }
     private fun disableChildren(parent: android.view.ViewGroup) {
         for (i in 0 until parent.childCount) {
@@ -205,7 +252,7 @@ class LessonActivity : BaseActivity() {
         confirm("Выбрать эту версию?", if (remote) "Локальные ответы этого урока будут заменены показанной версией сайта. Перед заменой можно экспортировать обе версии в настройках."
             else "Ответы телефона будут подготовлены к отправке. Если сайт изменился снова, приложение ещё раз проверит конфликт.", "Выбрать") {
             LocalIo.executor.execute {
-                AnswerStore.get(appContext).resolve(owner, lesson.slug, remote)
+                AnswerStore.get(appContext).resolve(owner, lesson.slug, remote, classId)
                 runOnUiThread { load() }
             }
         }

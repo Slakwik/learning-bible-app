@@ -60,7 +60,7 @@ test('no WebView, portrait lock, broad storage permissions or cloud backup', () 
   for (const f of fs.readdirSync(sourceDir)) assert.doesNotMatch(fs.readFileSync(path.join(sourceDir,f),'utf8'), /android\.webkit|WebView\(/);
 });
 test('account isolation and three-way merge remain explicit', () => {
-  assert.match(kotlin('AnswerStore'), /PRIMARY KEY\(uid, slug\)/);
+  assert.match(kotlin('AnswerStore'), /PRIMARY KEY\(uid, class_id, slug\)/);
   assert.match(kotlin('Sync'), /runTransaction/);
   assert.match(kotlin('Sync'), /Source\.SERVER/);
   assert.match(kotlin('Sync'), /q\[0-9\]\+\[a-z\]\*/);

@@ -76,7 +76,7 @@ class SettingsActivity : BaseActivity() {
                 })
                 addView(action("Выйти из аккаунта", false) {
                     lifecycleScope.launch {
-                        val pending = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).records(owner).count { it.dirty } }
+                        val pending = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).allRecords(owner).count { it.dirty } }
                         confirm("Выйти?", "Неотправленных уроков: $pending. Ответы останутся на телефоне отдельно для этого аккаунта. Для продолжения потребуется повторный вход с интернетом.", "Выйти") {
                             FirebaseAuth.getInstance().signOut()
                             SyncScheduler.configure(this@SettingsActivity)
@@ -125,7 +125,7 @@ class SettingsActivity : BaseActivity() {
             val counter = text("Проверяем локальные ответы…", 14)
             addView(counter)
             lifecycleScope.launch {
-                val records = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).records(owner) }
+                val records = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).allRecords(owner) }
                 counter.text = "Уроков с изменениями: " + records.count { it.dirty } +
                     "\nКонфликтов: " + records.count { it.remoteConflict != null }
             }

@@ -9,11 +9,11 @@ import org.json.JSONObject
 data class AnswerRecord(
     val uid: String, val slug: String, val values: Map<String, String>,
     val base: Map<String, String>, val revision: Long = 0, val dirty: Boolean = false,
-    val remoteConflict: Map<String, String>? = null
+    val remoteConflict: Map<String, String>? = null, val classId: String? = null
 )
 
 /** Account-isolated durable store; the network never holds its lock. */
-class AnswerStore internal constructor(context: Context) : SQLiteOpenHelper(context, "answers_v2.db", null, 1) {
+class AnswerStore internal constructor(context: Context) : SQLiteOpenHelper(context, "answers_v2.db", null, 2) {
     companion object {
         const val GUEST = "local-guest"
         @Volatile private var instance: AnswerStore? = null
@@ -28,49 +28,58 @@ class AnswerStore internal constructor(context: Context) : SQLiteOpenHelper(cont
     }
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE answers (
-            uid TEXT NOT NULL, slug TEXT NOT NULL, payload TEXT NOT NULL,
+            uid TEXT NOT NULL, slug TEXT NOT NULL, class_id TEXT NOT NULL DEFAULT '', payload TEXT NOT NULL,
             baseline TEXT NOT NULL, revision INTEGER NOT NULL, dirty INTEGER NOT NULL,
-            conflict TEXT, PRIMARY KEY(uid, slug))""")
+            conflict TEXT, PRIMARY KEY(uid, class_id, slug))""")
     }
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        error("Explicit non-destructive migration required")
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE answers RENAME TO answers_personal_v1")
+            onCreate(db)
+            db.execSQL("""INSERT INTO answers (uid, slug, class_id, payload, baseline, revision, dirty, conflict)
+                SELECT uid, slug, '', payload, baseline, revision, dirty, conflict FROM answers_personal_v1""")
+            db.execSQL("DROP TABLE answers_personal_v1")
+        }
     }
-    @Synchronized fun record(uid: String, slug: String): AnswerRecord =
-        records(uid).firstOrNull { it.slug == slug } ?: AnswerRecord(uid, slug, emptyMap(), emptyMap())
+    @Synchronized fun record(uid: String, slug: String, classId: String? = null): AnswerRecord =
+        records(uid, classId).firstOrNull { it.slug == slug } ?: AnswerRecord(uid, slug, emptyMap(), emptyMap(), classId = classId)
 
-    @Synchronized fun records(uid: String): List<AnswerRecord> {
+    @Synchronized fun records(uid: String, classId: String? = null): List<AnswerRecord> =
+        allRecords(uid).filter { it.classId == classId }
+
+    @Synchronized fun allRecords(uid: String): List<AnswerRecord> {
         val result = mutableListOf<AnswerRecord>()
         readableDatabase.query("answers", null, "uid = ?", arrayOf(uid), null, null, "slug").use { c ->
             while (c.moveToNext()) {
                 fun s(name: String) = c.getString(c.getColumnIndexOrThrow(name))
                 result += AnswerRecord(uid, s("slug"), map(s("payload")), map(s("baseline")),
                     c.getLong(c.getColumnIndexOrThrow("revision")), c.getInt(c.getColumnIndexOrThrow("dirty")) != 0,
-                    c.getColumnIndexOrThrow("conflict").let { if (c.isNull(it)) null else map(c.getString(it)) })
+                    c.getColumnIndexOrThrow("conflict").let { if (c.isNull(it)) null else map(c.getString(it)) }, s("class_id").ifEmpty { null })
             }
         }
         return result
     }
     private fun put(r: AnswerRecord) {
         val values = ContentValues().apply {
-            put("uid", r.uid); put("slug", r.slug); put("payload", json(r.values)); put("baseline", json(r.base))
+            put("class_id", r.classId.orEmpty()); put("uid", r.uid); put("slug", r.slug); put("payload", json(r.values)); put("baseline", json(r.base))
             put("revision", r.revision); put("dirty", if (r.dirty) 1 else 0)
             if (r.remoteConflict == null) putNull("conflict") else put("conflict", json(r.remoteConflict))
         }
         check(writableDatabase.insertWithOnConflict("answers", null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L)
     }
-    @Synchronized fun edit(uid: String, slug: String, question: String, value: String) {
-        val before = record(uid, slug)
+    @Synchronized fun edit(uid: String, slug: String, question: String, value: String, classId: String? = null) {
+        val before = record(uid, slug, classId)
         val after = SyncPolicy.normalize(before.values + (question to value))
         if (after != before.values) put(before.copy(values = after, revision = before.revision + 1, dirty = after != before.base))
     }
-    @Synchronized fun acceptRemote(uid: String, slug: String, values: Map<String, String>) {
-        val before = record(uid, slug)
+    @Synchronized fun acceptRemote(uid: String, slug: String, values: Map<String, String>, classId: String? = null) {
+        val before = record(uid, slug, classId)
         // A slow fetch may finish after typing starts. Never overwrite local edits.
         if (!before.dirty && before.remoteConflict == null)
             put(before.copy(values = values, base = values, revision = before.revision + 1))
     }
     @Synchronized fun acknowledge(sent: AnswerRecord, accepted: Map<String, String>) {
-        val current = record(sent.uid, sent.slug)
+        val current = record(sent.uid, sent.slug, sent.classId)
         // Preserve edits made during upload; only advance their baseline.
         val now = if (current.revision == sent.revision) accepted
             else SyncPolicy.merge(sent.values, current.values, accepted).answers
@@ -78,11 +87,11 @@ class AnswerStore internal constructor(context: Context) : SQLiteOpenHelper(cont
             remoteConflict = null, revision = current.revision + 1))
     }
     @Synchronized fun conflict(sent: AnswerRecord, remote: Map<String, String>) {
-        val current = record(sent.uid, sent.slug)
+        val current = record(sent.uid, sent.slug, sent.classId)
         put(current.copy(remoteConflict = remote))
     }
-    @Synchronized fun resolve(uid: String, slug: String, remoteVersion: Boolean) {
-        val current = record(uid, slug)
+    @Synchronized fun resolve(uid: String, slug: String, remoteVersion: Boolean, classId: String? = null) {
+        val current = record(uid, slug, classId)
         val remote = current.remoteConflict ?: return
         val selected = if (remoteVersion) remote else current.values
         put(current.copy(values = selected, base = remote, dirty = selected != remote,
@@ -90,12 +99,16 @@ class AnswerStore internal constructor(context: Context) : SQLiteOpenHelper(cont
     }
     @Synchronized fun export(uid: String): String {
         val lessons = JSONObject()
-        records(uid).forEach { r ->
-            lessons.put(r.slug, JSONObject().put("answers", JSONObject(r.values))
+        val classes = JSONObject()
+        allRecords(uid).forEach { r ->
+            val target = r.classId?.let { id ->
+                classes.optJSONObject(id) ?: JSONObject().also { classes.put(id, it) }
+            } ?: lessons
+            target.put(r.slug, JSONObject().put("answers", JSONObject(r.values))
                 .put("base", JSONObject(r.base)).put("pending", r.dirty)
                 .put("remoteConflict", r.remoteConflict?.let { JSONObject(it) } ?: JSONObject.NULL))
         }
-        return JSONObject().put("format", "bible-learning-personal-answers-v2")
-            .put("uid", uid).put("lessons", lessons).toString(2)
+        return JSONObject().put("format", "bible-learning-answers-v3")
+            .put("uid", uid).put("lessons", lessons).put("classes", classes).toString(2)
     }
 }
