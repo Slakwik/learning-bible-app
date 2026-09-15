@@ -17,6 +17,18 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - name: Restore persistent preview signing key
+        env:
+          PREVIEW_KEYSTORE_BASE64: ${{ secrets.ANDROID_PREVIEW_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$PREVIEW_KEYSTORE_BASE64" ]; then
+            mkdir -p "$HOME/.android"
+            printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+            chmod 600 "$HOME/.android/debug.keystore"
+          elif [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "Configure ANDROID_PREVIEW_KEYSTORE_BASE64 before publishing preview APKs."
+            exit 1
+          fi
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.10.2' }
       - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -24,7 +36,6 @@ jobs:
         run: |
           cat >> android/app/build.gradle <<'GRADLE'
           android.buildTypes.debug.applicationIdSuffix = '.classpreview'
-          android.defaultConfig.versionName = '0.3.0-class-preview'
           GRADLE
           python3 - <<'PY'
           from pathlib import Path

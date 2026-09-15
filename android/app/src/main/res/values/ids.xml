@@ -2,4 +2,6 @@
 <resources>
     <item name="screen_scroll" type="id" />
     <item name="bottom_navigation" type="id" />
+    <item name="login_email" type="id" />
+    <item name="login_password" type="id" />
 </resources>

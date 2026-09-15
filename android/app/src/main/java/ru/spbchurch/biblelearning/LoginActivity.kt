@@ -16,9 +16,12 @@ class LoginActivity : BaseActivity() {
         content.addView(text("Войдите в аккаунт сайта, чтобы открыть свой класс и продолжить занятия.", 16, muted = true))
         card(content) {
             val email = input(this, "Электронная почта")
+            email.id = R.id.login_email
+            email.setText(prefs.loginEmail)
             email.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            if (android.os.Build.VERSION.SDK_INT >= 26) email.setAutofillHints(View.AUTOFILL_HINT_EMAIL_ADDRESS)
+            if (android.os.Build.VERSION.SDK_INT >= 26) email.setAutofillHints(View.AUTOFILL_HINT_USERNAME, View.AUTOFILL_HINT_EMAIL_ADDRESS)
             val password = input(this, "Пароль")
+            password.id = R.id.login_password
             password.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             if (android.os.Build.VERSION.SDK_INT >= 26) password.setAutofillHints(View.AUTOFILL_HINT_PASSWORD)
             password.isSaveEnabled = false
@@ -35,6 +38,11 @@ class LoginActivity : BaseActivity() {
                 error.text = "Выполняется вход…"
                 FirebaseAuth.getInstance().signInWithEmailAndPassword(address, password.text.toString())
                     .addOnSuccessListener {
+                        prefs.loginEmail = address
+                        // Commit while credentials are still in the fields; the OS controls saving.
+                        if (android.os.Build.VERSION.SDK_INT >= 26) {
+                            getSystemService(android.view.autofill.AutofillManager::class.java)?.commit()
+                        }
                         password.text?.clear()
                         SyncScheduler.configure(applicationContext)
                         SyncScheduler.afterEdit(applicationContext)
@@ -59,6 +67,6 @@ class LoginActivity : BaseActivity() {
                 }
             })
         }
-        content.addView(text("Гостевые черновики останутся отдельно и не будут автоматически объединены с ответами аккаунта. Приглашение в класс принимается на сайте.", 14, muted = true))
+        content.addView(text("Вход сохраняется между запусками приложения. Приглашение в класс принимается на сайте.", 14, muted = true))
     }
 }

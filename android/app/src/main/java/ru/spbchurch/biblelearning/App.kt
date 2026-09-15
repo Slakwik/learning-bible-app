@@ -32,6 +32,9 @@ object LocalIo {
 
 class Preferences(context: Context) {
     private val prefs = context.getSharedPreferences("settings_v2", Context.MODE_PRIVATE)
+    var loginEmail: String
+        get() = prefs.getString("login_email", "").orEmpty()
+        set(value) { prefs.edit().putString("login_email", value).apply() }
     var theme: String
         get() = prefs.getString("theme", "system") ?: "system"
         set(value) { prefs.edit().putString("theme", value).apply() }

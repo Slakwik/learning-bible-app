@@ -17,11 +17,20 @@ import org.robolectric.annotation.Config
 class LoginActivityTest {
     @Test fun loginScreenOpensWithEmailAndPasswordFields() {
         // Opening the screen must not require a Firebase session or network request.
+        val prefs = Preferences(org.robolectric.RuntimeEnvironment.getApplication())
+        prefs.loginEmail = "saved@example.test"
+        prefs.resetReading()
         val controller = Robolectric.buildActivity(LoginActivity::class.java).setup().visible()
         try {
             val activity = controller.get()
             val fields = descendants(activity.window.decorView).filterIsInstance<TextInputEditText>().toList()
             assertEquals(2, fields.size)
+            assertEquals("saved@example.test", fields[0].text.toString())
+            assertTrue(fields[1].text.isNullOrEmpty())
+            assertEquals(R.id.login_email, fields[0].id)
+            assertEquals(R.id.login_password, fields[1].id)
+            assertTrue(fields[0].autofillHints!!.contains(View.AUTOFILL_HINT_USERNAME))
+            assertTrue(fields[1].autofillHints!!.contains(View.AUTOFILL_HINT_PASSWORD))
             assertEquals(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
                 fields[0].inputType and InputType.TYPE_MASK_VARIATION)
             assertEquals(InputType.TYPE_TEXT_VARIATION_PASSWORD,
@@ -33,6 +42,7 @@ class LoginActivityTest {
             assertEquals("local-test-input", fields[1].text.toString())
         } finally {
             controller.pause().stop().destroy()
+            prefs.loginEmail = ""
         }
     }
 
