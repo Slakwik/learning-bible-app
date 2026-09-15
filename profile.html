@@ -1,0 +1,145 @@
+---
+layout: default
+title: "Личный кабинет"
+---
+
+<section class="container" style="padding-top: 40px; padding-bottom: 80px;">
+  <a href="{{ '/' | relative_url }}" class="back-link">&larr; На главную</a>
+  <h1>Личный кабинет</h1>
+  <p style="color: var(--text-light); margin-bottom: 32px;">Настройки вашего аккаунта и оформления.</p>
+
+  <div id="authGate" style="display:none;">
+    <div class="auth-gate-message">
+      <p>Чтобы открыть кабинет, нужно войти в систему.</p>
+      <a href="{{ '/login/' | relative_url }}" class="btn btn-primary">Войти</a>
+    </div>
+  </div>
+
+  <div id="profileApp" style="display:none;">
+    <div style="display: grid; grid-template-columns: 1fr; gap: 32px; max-width: 880px;">
+
+      <!-- Профиль -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px;">
+        <h2 style="font-size: 1.4rem; margin-bottom: 16px;">Профиль</h2>
+        <dl style="display: grid; grid-template-columns: minmax(80px, 140px) minmax(0, 1fr); gap: 12px 24px; align-items: baseline;">
+          <dt style="color: var(--text-light); font-size: 14px;">Имя</dt>
+          <dd id="profName" style="font-weight: 500;"></dd>
+          <dt style="color: var(--text-light); font-size: 14px;">Email</dt>
+          <dd id="profEmail" style="color: var(--text-light); font-size: 14px;"></dd>
+          <dt style="color: var(--text-light); font-size: 14px;">Роль</dt>
+          <dd id="profRole" style="font-size: 14px;"></dd>
+        </dl>
+      </div>
+
+      <!-- Тема оформления -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px;">
+        <h2 style="font-size: 1.4rem; margin-bottom: 8px;">Тема оформления</h2>
+        <p style="color: var(--text-light); font-size: 15px; margin-bottom: 8px;">
+          Выбор сохраняется автоматически и применяется на всех ваших устройствах.
+        </p>
+
+        <div class="theme-picker" id="themePicker"></div>
+
+        <p id="themeSaveStatus" style="margin-top: 16px; font-size: 13px; color: var(--text-light); min-height: 20px;"></p>
+      </div>
+
+      <!-- Доступ к моим ответам -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px;">
+        <h2 style="font-size: 1.4rem; margin-bottom: 8px;">Мои ответы</h2>
+        <p style="color: var(--text-light); font-size: 15px; margin-bottom: 16px;">
+          Все ваши ответы по урокам — для просмотра, печати или подготовки к встрече группы.
+        </p>
+        <a href="{{ '/my-answers/' | relative_url }}" class="btn btn-outline">Перейти к моим ответам &rarr;</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  var THEMES = [
+    {
+      id: 'original',
+      name: 'Классика',
+      desc: 'Тёмно-синий с золотым акцентом — спокойный и проверенный.',
+      previewClass: 'theme-card-preview-original',
+      previewHTML: 'Изуч<em>ение</em>'
+    },
+    {
+      id: 'papyrus',
+      name: 'Папирус',
+      desc: 'Журнальная типографика, кремовая бумага, винные акценты.',
+      previewClass: 'theme-card-preview-papyrus',
+      previewHTML: 'Папи<em>рус</em>'
+    },
+    {
+      id: 'hearth',
+      name: 'Очаг',
+      desc: 'Тёплая палитра, мягкие карточки, неспешное чтение.',
+      previewClass: 'theme-card-preview-hearth',
+      previewHTML: 'О<em>чаг</em>'
+    },
+    {
+      id: 'covenant',
+      name: 'Завет',
+      desc: 'Тёмная тема с янтарными акцентами — современно и смело.',
+      previewClass: 'theme-card-preview-covenant',
+      previewHTML: 'Зав<em>ет</em>'
+    }
+  ];
+
+  function escHtml(str) { var d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+  function renderThemePicker(activeTheme, currentUid) {
+    var picker = document.getElementById('themePicker');
+    picker.innerHTML = '';
+    THEMES.forEach(function (t) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'theme-card' + (t.id === activeTheme ? ' active' : '');
+      btn.dataset.theme = t.id;
+      btn.style.position = 'relative';
+      btn.innerHTML =
+        '<span class="theme-card-check">✓</span>' +
+        '<div class="theme-card-preview ' + t.previewClass + '">' + t.previewHTML + '</div>' +
+        '<div class="theme-card-body">' +
+          '<div class="theme-card-name">' + escHtml(t.name) + '</div>' +
+          '<div class="theme-card-desc">' + escHtml(t.desc) + '</div>' +
+        '</div>';
+      btn.addEventListener('click', function () {
+        var status = document.getElementById('themeSaveStatus');
+        BibleTheme.apply(t.id);
+        // Update active state
+        picker.querySelectorAll('.theme-card').forEach(function (c) {
+          c.classList.toggle('active', c.dataset.theme === t.id);
+        });
+        if (currentUid) {
+          status.textContent = 'Сохраняем...';
+          BibleTheme.save(currentUid, t.id).then(function () {
+            status.textContent = 'Тема «' + t.name + '» сохранена.';
+          }).catch(function () {
+            status.textContent = 'Не удалось сохранить, но тема применена локально.';
+          });
+        } else {
+          status.textContent = 'Тема применена локально.';
+        }
+      });
+      picker.appendChild(btn);
+    });
+  }
+
+  window.addEventListener('bible-auth-ready', function (e) {
+    var user = e.detail && e.detail.user;
+    var profile = e.detail && e.detail.profile;
+    if (!user) {
+      document.getElementById('authGate').style.display = '';
+      return;
+    }
+    document.getElementById('profileApp').style.display = '';
+    document.getElementById('profName').textContent = profile.name || '—';
+    document.getElementById('profEmail').textContent = profile.email || user.email || '—';
+    document.getElementById('profRole').textContent = profile.role === 'admin' ? 'Администратор' : profile.role === 'leader' ? 'Ведущий' : 'Ученик';
+    var current = (profile && profile.theme) || BibleTheme.get();
+    renderThemePicker(current, user.uid);
+  });
+</script>

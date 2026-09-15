@@ -1,0 +1,140 @@
+---
+layout: admin
+title: "Админ-панель"
+---
+
+<h1>Админ-панель</h1>
+<p><a href="/announcements/">Общие объявления: опубликовать и изменить →</a></p>
+<p>Назначайте ведущих в карточке пользователя. Управление классами доступно в разделе <a href="/classes/">«Классы»</a>.</p>
+<div id="adminError" class="form-error" role="alert"></div>
+
+<div class="admin-tabs">
+  <button class="admin-tab active" data-tab="users">Пользователи</button>
+  <button class="admin-tab" data-tab="leaders">Ведущие и классы</button>
+  <button class="admin-tab" data-tab="progress">Прогресс учеников</button>
+  <button class="admin-tab" data-tab="lessons">Уроки</button>
+</div>
+
+<!-- Users panel -->
+<div class="admin-panel active" id="panel-users">
+  <div class="admin-toolbar">
+    <h2>Управление пользователями</h2>
+    <button class="btn btn-primary btn-sm" id="addUserBtn">+ Добавить</button>
+  </div>
+  <p>Забыли пароль? Отправьте пользователю письмо для установки нового. Удалять профиль для этого не нужно.</p>
+  <button type="button" class="btn btn-outline btn-sm" id="recoverUserBtn">Восстановить доступ / профиль</button>
+  <p id="accountNotice" role="status"></p>
+  <div class="admin-table-wrap"><table class="admin-table">
+    <thead>
+      <tr>
+        <th>Имя</th>
+        <th>Email</th>
+        <th>Роль</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody id="usersTableBody"></tbody>
+  </table></div>
+</div>
+
+<div class="admin-panel" id="panel-leaders">
+  <div class="admin-toolbar"><h2>Ведущие, классы и ученики</h2><button type="button" id="refreshLeaderTree" class="btn btn-outline btn-sm">Обновить</button></div>
+  <p>У каждого ведущего может быть несколько классов. Разверните класс, чтобы увидеть его учеников.</p>
+  <div id="leaderTree" aria-live="polite"></div>
+</div>
+
+<!-- Progress panel -->
+<div class="admin-panel" id="panel-progress">
+  <h2>Прогресс учеников</h2>
+  <p style="color:var(--text-light);margin-bottom:16px;">Просмотр ответов пользователей на вопросы уроков.</p>
+  <div class="form-group" style="max-width:300px;">
+    <label for="progressUser">Выберите ученика</label>
+    <select id="progressUser">
+      <option value="">— выберите —</option>
+    </select>
+  </div>
+  <div id="progressContent"></div>
+</div>
+
+<!-- Lessons panel -->
+<div class="admin-panel" id="panel-lessons">
+  <h2>Уроки</h2>
+  <p style="color:var(--text-light);margin-bottom:16px;">Список доступных уроков. Для добавления новых уроков создайте файл в папке <code>_lessons/</code>.</p>
+  <div class="admin-table-wrap"><table class="admin-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Название</th>
+        <th>Ссылка</th>
+        <th>Отвечено (учеников)</th>
+      </tr>
+    </thead>
+    <tbody id="lessonsTableBody">
+      {% assign sorted = site.lessons | sort: "order" %}
+      {% for lesson in sorted %}
+      <tr>
+        <td>{{ lesson.order }}</td>
+        <td>{{ lesson.title }}</td>
+        <td><a href="{{ lesson.url | relative_url }}">{{ lesson.reference }}</a></td>
+        <td class="lesson-answer-count" data-slug="{{ lesson.slug }}">—</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<!-- Add/Edit user modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <h3 id="modalTitle">Добавить пользователя</h3>
+    <form id="userForm">
+      <input type="hidden" id="editUid" value="">
+      <div class="form-group">
+        <label for="uName">Имя</label>
+        <input type="text" id="uName" required>
+      </div>
+      <div class="form-group">
+        <label for="uEmail">Email</label>
+        <input type="email" id="uEmail" required>
+      </div>
+      <div class="form-group">
+        <label for="uPassword">Пароль (мин. 6 символов)</label>
+        <input type="password" id="uPassword">
+      </div>
+      <div class="form-group">
+        <label for="uRole">Роль</label>
+        <select id="uRole">
+          <option value="user">Ученик</option>
+          <option value="leader">Ведущий</option>
+          <option value="admin">Администратор</option>
+        </select>
+      </div>
+      <div class="form-error" id="userFormError"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline btn-sm" id="cancelModal">Отмена</button>
+        <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="recoveryModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recoveryTitle">
+    <h3 id="recoveryTitle">Восстановить доступ</h3>
+    <p>Аккаунт входа сохраняется даже после удаления профиля. Новый пароль ученик задаёт сам по ссылке из письма.</p>
+    <form id="recoveryForm">
+      <div class="form-group"><label for="recoveryEmail">Email аккаунта</label><input id="recoveryEmail" type="email" required autocomplete="email"></div>
+      <div id="restoreFields" hidden>
+        <p>Восстановление сохранит прежнее участие в классах и ответы. Проверьте имя и email ученика.</p>
+        <div class="form-group"><label for="recoveryUid">UID аккаунта</label><input id="recoveryUid" readonly></div>
+        <div class="form-group"><label for="recoveryName">Имя ученика</label><input id="recoveryName"></div>
+      </div>
+      <p id="recoveryStatus" role="status"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline btn-sm" id="cancelRecovery">Закрыть</button>
+        <button type="button" class="btn btn-outline btn-sm" id="restoreProfileBtn" hidden>Восстановить профиль</button>
+        <button type="submit" class="btn btn-primary btn-sm">Отправить письмо</button>
+      </div>
+    </form>
+  </div>
+</div>

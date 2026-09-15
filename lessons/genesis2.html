@@ -1,0 +1,41 @@
+---
+layout: default
+title: "Бытие (часть 2) — Уроки"
+---
+
+<section class="container">
+  <div style="padding-top: 40px;">
+    <a href="{{ '/lessons/' | relative_url }}" class="back-link">&larr; Все курсы</a>
+    <h1>Бытие (часть 2)</h1>
+    <p style="color: var(--text-light); margin-bottom: 8px;">Быт. 25-50 &middot; 15 уроков для взрослых</p>
+    <p>Жизнь Исаака, Иакова и Иосифа. Божья верность сквозь поколения.</p>
+  </div>
+
+  <ul class="lessons-list">
+    {% assign sorted = site.lessons | where: "course", "genesis2" | sort: "order" %}
+    {% for lesson in sorted %}
+    <li>
+      <a href="{{ lesson.url | relative_url }}" data-lesson="{{ lesson.slug }}">
+        <span class="lesson-num">{{ lesson.order }}</span>
+        <div class="lesson-info">
+          <h3>{{ lesson.title }}</h3>
+          <p>{{ lesson.reference }}</p>
+        </div>
+        <span class="lesson-status" id="status-{{ lesson.slug }}">Пройден</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script>
+window.addEventListener('bible-auth-ready', function(e) {
+  if (!e.detail.user) return;
+  BibleDB.getUserAnswers(e.detail.user.uid).then(function(answers) {
+    Object.keys(answers).forEach(function(slug) {
+      var el = document.getElementById('status-' + slug);
+      if (el) el.classList.add('visible');
+    });
+  });
+});
+</script>

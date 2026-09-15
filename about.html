@@ -1,0 +1,88 @@
+---
+layout: default
+title: "О платформе"
+---
+
+<section class="container">
+  <div style="padding-top: 40px;">
+    <h1>О платформе</h1>
+    <p style="color: var(--text-light); margin-bottom: 32px;">Материалы и презентации платформы «Изучение Библии»</p>
+  </div>
+
+  <div class="about-grid">
+    <div class="about-card">
+      <div class="about-card-icon">&#128220;</div>
+      <h3>Презентация для церкви</h3>
+      <p>Курсы, классы и расписание, объявления, приглашения по email, ответы и дерево админки.</p>
+      <div class="about-card-actions">
+        <a href="{{ '/presentation.pdf' | relative_url }}?v={{ site.time | date: '%s' }}" class="btn btn-primary btn-sm" target="_blank">Скачать PDF</a>
+        <span class="about-meta">14 слайдов &middot; PDF</span>
+      </div>
+    </div>
+
+    <div class="about-card">
+      <div class="about-card-icon">&#128187;</div>
+      <h3>Техническая презентация</h3>
+      <p>Классы, роли, архитектура, безопасность и публикация сайта. Для тех, кто хочет разобраться в устройстве платформы.</p>
+      <div class="about-card-actions">
+        <a href="{{ '/presentation.html' | relative_url }}?v={{ site.time | date: '%s' }}" class="btn btn-outline btn-sm" target="_blank">Открыть слайды</a>
+        <span class="about-meta">17 слайдов &middot; HTML</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>О платформе</h2>
+    <p>«Изучение Библии» — онлайн-платформа для совместного изучения Священного Писания. Подходит для домашних групп, воскресных школ и индивидуального изучения.</p>
+
+    <h3 style="margin-top:24px;">Доступные курсы</h3>
+    <div class="admin-table-wrap"><table class="admin-table" style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>Курс</th>
+          <th>Уроков</th>
+          <th>Книги Библии</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Послание Иакова</td><td>6</td><td>Иакова 1-5</td></tr>
+        <tr><td>Послание к Ефесянам</td><td>6</td><td>Ефесянам 1-6</td></tr>
+        <tr><td>Послание к Галатам</td><td>6</td><td>Галатам 1-6</td></tr>
+        <tr><td>Послание к Филиппийцам</td><td>6</td><td>Филиппийцам 1-4</td></tr>
+        <tr><td>Мудрость Соломона</td><td>12</td><td>Притчи, Екклесиаст, Песнь Песней</td></tr>
+        <tr><td>Жизнь христианина</td><td>12</td><td>Филимону, 1-3 Иоанна, Иуды</td></tr>
+        <tr><td>Второзаконие</td><td>12</td><td>Второзаконие 1-34</td></tr>
+        <tr><td>Евангелие от Марка</td><td>18</td><td>Марк 1-16</td></tr>
+        <tr><td>Бытие (часть 1)</td><td>15</td><td>Быт. 1-25</td></tr>
+        <tr><td>Бытие (часть 2)</td><td>15</td><td>Быт. 25-50</td></tr>
+        <tr><td>Иисус Навин</td><td>6</td><td>Нав. 1-24</td></tr>
+        <tr><td>Амос и Исаия</td><td>15</td><td>Амос, Исаия</td></tr>
+        <tr><td>Даниил</td><td>12</td><td>Дан. 1-12</td></tr>
+        <tr><td>Деяния (часть 1)</td><td>15</td><td>Деян. 1-15</td></tr>
+        <tr><td>Деяния (часть 2)</td><td>15</td><td>Деян. 15-28</td></tr>
+        <tr><td>1 Коринфянам</td><td>17</td><td>1 Кор. 1-16</td></tr>
+        <tr><td>2 Коринфянам</td><td>12</td><td>2 Кор. 1-13</td></tr>
+        <tr><td>1-2 Фессалоникийцам</td><td>6</td><td>1-2 Фесс.</td></tr>
+        <tr><td>Послание 1 Иоанна</td><td>6</td><td>1 Ин. 1-5</td></tr>
+        <tr><td>Если будете молиться</td><td>8</td><td>8 уроков</td></tr>
+        <tr><td>Библия: Божья удивительная книга</td><td>7</td><td>Обзор Библии</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3 style="margin-top:32px;">Как это работает</h3>
+    <ol class="about-steps">
+      <li>Записаться на курс через форму на сайте</li>
+      <li>Получить учётную запись от администратора</li>
+      <li>Ведущий добавляет ученика в свой класс</li>
+      <li>Войти на платформу и открыть программу своего класса</li>
+      <li>Читать уроки и отвечать на вопросы</li>
+      <li>Просмотреть ответы класса перед встречей</li>
+      <li>Обсудить на групповой встрече</li>
+    </ol>
+  </div>
+
+  <div class="about-section">
+    <h2>Материалы курса</h2>
+    <p>Учебные материалы курсов предоставлены <strong>Местной Религиозной Организацией Санкт-Петербургский Центр «Духовное Возрождение» Евангельских Христиан-Баптистов</strong>.</p>
+  </div>
+</section>

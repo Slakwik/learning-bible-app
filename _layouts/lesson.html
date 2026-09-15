@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} — {{ site.title }}</title>
+  <link rel="icon" href="{{ '/favicon.ico' | relative_url }}" type="image/x-icon">
+  <link rel="icon" href="{{ '/assets/img/favicon.png' | relative_url }}?v={{ site.time | date: "%s" }}" type="image/png">
+  <script>
+    (function () {
+      var defaultTheme = '{{ site.default_theme | default: "original" }}';
+      var saved = null;
+      try { saved = localStorage.getItem('bible-theme'); } catch (e) {}
+      document.documentElement.setAttribute('data-theme', saved || defaultTheme);
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}?v={{ site.time | date: "%s" }}">
+  <link rel="stylesheet" href="{{ '/assets/css/themes.css' | relative_url }}?v={{ site.time | date: "%s" }}">
+</head>
+<body>
+  {% include header.html %}
+  <main id="mainContent" class="lesson-page">
+    <div class="container">
+      <div class="lesson-header">
+        {% if page.course == "james" %}
+        <a href="{{ '/lessons/james/' | relative_url }}" class="back-link">&larr; Послание Иакова</a>
+        {% elsif page.course == "ephesians" %}
+        <a href="{{ '/lessons/ephesians/' | relative_url }}" class="back-link">&larr; Послание к Ефесянам</a>
+        {% elsif page.course == "christian-life" %}
+        <a href="{{ '/lessons/christian-life/' | relative_url }}" class="back-link">&larr; Жизнь христианина</a>
+        {% elsif page.course == "deuteronomy" %}
+        <a href="{{ '/lessons/deuteronomy/' | relative_url }}" class="back-link">&larr; Второзаконие</a>
+        {% elsif page.course == "mark" %}
+        <a href="{{ '/lessons/mark/' | relative_url }}" class="back-link">&larr; Евангелие от Марка</a>
+        {% elsif page.course == "genesis1" %}
+        <a href="{{ '/lessons/genesis1/' | relative_url }}" class="back-link">&larr; Бытие (часть 1)</a>
+        {% elsif page.course == "genesis2" %}
+        <a href="{{ '/lessons/genesis2/' | relative_url }}" class="back-link">&larr; Бытие (часть 2)</a>
+        {% elsif page.course == "joshua" %}
+        <a href="{{ '/lessons/joshua/' | relative_url }}" class="back-link">&larr; Иисус Навин</a>
+        {% elsif page.course == "amos-isaiah" %}
+        <a href="{{ '/lessons/amos-isaiah/' | relative_url }}" class="back-link">&larr; Амос и Исаия</a>
+        {% elsif page.course == "daniel" %}
+        <a href="{{ '/lessons/daniel/' | relative_url }}" class="back-link">&larr; Даниил</a>
+        {% elsif page.course == "acts1" %}
+        <a href="{{ '/lessons/acts1/' | relative_url }}" class="back-link">&larr; Деяния (часть 1)</a>
+        {% elsif page.course == "acts2" %}
+        <a href="{{ '/lessons/acts2/' | relative_url }}" class="back-link">&larr; Деяния (часть 2)</a>
+        {% elsif page.course == "corinthians1" %}
+        <a href="{{ '/lessons/corinthians1/' | relative_url }}" class="back-link">&larr; 1 Коринфянам</a>
+        {% elsif page.course == "corinthians2" %}
+        <a href="{{ '/lessons/corinthians2/' | relative_url }}" class="back-link">&larr; 2 Коринфянам</a>
+        {% elsif page.course == "thessalonians" %}
+        <a href="{{ '/lessons/thessalonians/' | relative_url }}" class="back-link">&larr; 1-2 Фессалоникийцам</a>
+        {% elsif page.course == "first-john" %}
+        <a href="{{ '/lessons/first-john/' | relative_url }}" class="back-link">&larr; Послание 1 Иоанна</a>
+        {% elsif page.course == "prayer" %}
+        <a href="{{ '/lessons/prayer/' | relative_url }}" class="back-link">&larr; Если будете молиться</a>
+        {% elsif page.course == "bible-book" %}
+        <a href="{{ '/lessons/bible-book/' | relative_url }}" class="back-link">&larr; Библия: Божья удивительная книга</a>
+        {% else %}
+        <a href="{{ '/lessons/' | relative_url }}" class="back-link">&larr; Все курсы</a>
+        {% endif %}
+        <h1>{{ page.title }}</h1>
+        <p class="lesson-reference">{{ page.reference }}</p>
+      </div>
+
+      <div class="auth-gate" id="authGate" style="display:none;">
+        <div class="auth-gate-message">
+          <p>Для доступа к содержимому урока необходимо войти в систему.</p>
+          <a href="{{ '/login/' | relative_url }}" class="btn btn-primary">Войти</a>
+        </div>
+      </div>
+
+      <div class="lesson-content" id="lessonContent" data-lesson="{{ page.slug }}" style="display:none;">
+        {{ content }}
+      </div>
+
+      <div class="lesson-actions" id="lessonActions" style="display:none;">
+        <button id="saveAnswers" class="btn btn-primary">Сохранить ответы</button>
+        <span id="saveStatus" class="save-status"></span>
+      </div>
+
+      {% if page.previous_lesson or page.next_lesson %}
+      <div class="lesson-nav">
+        {% if page.previous_lesson %}
+        <a href="{{ page.previous_lesson | relative_url }}" class="btn btn-outline">&larr; Предыдущий урок</a>
+        {% endif %}
+        {% if page.next_lesson %}
+        <a href="{{ page.next_lesson | relative_url }}" class="btn btn-outline">Следующий урок &rarr;</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </main>
+  {% include footer.html %}
+  {% include firebase-scripts.html %}
+  <script src="{{ '/assets/js/app.js' | relative_url }}?v={{ site.time | date: "%s" }}"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isLeader() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'leader';
+    }
+    function managesClass(c) {
+      return isAdmin() || (isLeader() && c.leaderUid == request.auth.uid);
+    }
+    function classAccess(c) {
+      return signedIn() && (managesClass(c) || request.auth.uid in c.memberUids);
+    }
+    function validClass(c) {
+      return c.keys().hasOnly(['name', 'leaderUid', 'leaderName', 'weekday', 'time', 'duration',
+        'startDate', 'timezone', 'place', 'description', 'lessonSlugs', 'memberUids', 'archived', 'createdAt', 'updatedAt'])
+        && c.name is string && c.name.size() > 0 && c.name.size() <= 120
+        && c.leaderUid is string && c.leaderName is string && c.leaderName.size() <= 300
+        && c.weekday is int && c.weekday >= 0 && c.weekday <= 6
+        && c.time is string && c.time.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
+        && c.duration is int && c.duration >= 15 && c.duration <= 480
+        && c.startDate is string && c.startDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && c.timezone == 'Europe/Moscow'
+        && c.place is string && c.place.size() <= 300
+        && c.description is string && c.description.size() <= 2000
+        && c.lessonSlugs is list && c.lessonSlugs.size() > 0 && c.lessonSlugs.size() <= 300
+        && c.lessonSlugs.toSet().size() == c.lessonSlugs.size()
+        && c.memberUids is list && c.memberUids.size() <= 200
+        && c.memberUids.toSet().size() == c.memberUids.size()
+        && c.archived is bool && c.createdAt is timestamp && c.updatedAt == request.time;
+    }
+    function verifiedEmail() {
+      return signedIn() && request.auth.token.email_verified == true && request.auth.token.email is string;
+    }
+    function invited(classId) {
+      let path = /databases/$(database)/documents/classes/$(classId)/invitations/$(request.auth.token.email.lower());
+      let c = get(/databases/$(database)/documents/classes/$(classId)).data;
+      return verifiedEmail() && exists(path) && get(path).data.status == 'pending'
+        && get(path).data.expiresAt > request.time && !c.archived
+        && (get(/databases/$(database)/documents/users/$(get(path).data.createdBy)).data.role == 'admin'
+          || (c.leaderUid == get(path).data.createdBy
+            && get(/databases/$(database)/documents/users/$(c.leaderUid)).data.role == 'leader'));
+    }
+    function validAnnouncement(a) {
+      return a.keys().hasOnly(['title','body','archived','authorUid','createdAt','updatedAt'])
+        && a.title is string && a.title.size() > 0 && a.title.size() <= 120
+        && a.body is string && a.body.size() > 0 && a.body.size() <= 4000
+        && a.archived is bool && a.authorUid is string && a.createdAt is timestamp && a.updatedAt == request.time;
+    }
+    match /announcements/{id} {
+      allow read: if signedIn();
+      allow create: if isAdmin() && validAnnouncement(request.resource.data)
+        && request.resource.data.authorUid == request.auth.uid && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validAnnouncement(request.resource.data)
+        && request.resource.data.authorUid == resource.data.authorUid && request.resource.data.createdAt == resource.data.createdAt;
+    }
+    match /classes/{classId} {
+      allow read: if classAccess(resource.data);
+      allow get: if verifiedEmail() && invited(classId);
+      allow update: if verifiedEmail() && invited(classId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids','updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.memberUids is list && request.resource.data.memberUids.size() <= 200
+        && request.resource.data.memberUids.toSet() == resource.data.memberUids.toSet().union([request.auth.uid].toSet())
+        && request.resource.data.memberUids.size() == request.resource.data.memberUids.toSet().size()
+        && getAfter(/databases/$(database)/documents/classes/$(classId)/invitations/$(request.auth.token.email.lower())).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/classes/$(classId)/invitations/$(request.auth.token.email.lower())).data.acceptedUid == request.auth.uid;
+      match /announcements/{id} {
+        function owner() { return managesClass(get(/databases/$(database)/documents/classes/$(classId)).data)
+          && !get(/databases/$(database)/documents/classes/$(classId)).data.archived; }
+        allow read: if classAccess(get(/databases/$(database)/documents/classes/$(classId)).data);
+        allow create: if owner() && validAnnouncement(request.resource.data)
+          && request.resource.data.authorUid == request.auth.uid && request.resource.data.createdAt == request.time;
+        allow update: if owner() && validAnnouncement(request.resource.data)
+          && request.resource.data.authorUid == resource.data.authorUid && request.resource.data.createdAt == resource.data.createdAt;
+      }
+      match /invitations/{email} {
+        function owner() { return managesClass(get(/databases/$(database)/documents/classes/$(classId)).data)
+          && !get(/databases/$(database)/documents/classes/$(classId)).data.archived; }
+        function recipient() { return verifiedEmail() && request.auth.token.email.lower() == email; }
+        function validInvite(i) {
+          return i.keys().hasOnly(['email','name','status','createdBy','updatedAt','expiresAt'])
+            && i.email == email && i.email is string && i.email.size() <= 254 && i.email == i.email.lower()
+            && i.name is string && i.name.size() > 0 && i.name.size() <= 120 && i.status == 'pending'
+            && i.createdBy == request.auth.uid && i.updatedAt == request.time
+            && i.expiresAt is timestamp && i.expiresAt > request.time && i.expiresAt <= request.time + duration.value(8,'d');
+        }
+        allow read: if owner() || recipient();
+        allow create: if owner() && validInvite(request.resource.data);
+        allow update: if owner() && (validInvite(request.resource.data)
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+            && request.resource.data.status == 'revoked' && request.resource.data.updatedAt == request.time));
+        allow update: if recipient() && invited(classId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','acceptedUid','updatedAt'])
+          && request.resource.data.status == 'accepted' && request.resource.data.acceptedUid == request.auth.uid
+          && request.resource.data.updatedAt == request.time
+          && request.auth.uid in getAfter(/databases/$(database)/documents/classes/$(classId)).data.memberUids;
+      }
+      allow create: if validClass(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && (isAdmin() || (isLeader() && request.resource.data.leaderUid == request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.resource.data.leaderUid)).data.role in ['leader', 'admin'];
+      allow update: if managesClass(resource.data) && validClass(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (request.resource.data.leaderUid == resource.data.leaderUid || isAdmin())
+        && get(/databases/$(database)/documents/users/$(request.resource.data.leaderUid)).data.role in ['leader', 'admin'];
+    }
+    match /classAnswers/{answerId} {
+      function readable(a) {
+        let c = get(/databases/$(database)/documents/classes/$(a._class)).data;
+        return classAccess(c) && (managesClass(c) || a._uid == request.auth.uid);
+      }
+      function writable(a) {
+        let c = get(/databases/$(database)/documents/classes/$(a._class)).data;
+        return signedIn() && request.auth.uid in c.memberUids && !c.archived
+          && a._uid == request.auth.uid && a._lesson in c.lessonSlugs
+          && answerId == a._class + '_' + request.auth.uid + '_' + a._lesson;
+      }
+      allow get: if signedIn() && (exists(/databases/$(database)/documents/classAnswers/$(answerId))
+        ? readable(resource.data) : answerId.matches('.*_' + request.auth.uid + '_.*'));
+      allow list: if signedIn() && readable(resource.data);
+      allow create: if writable(request.resource.data);
+      allow update: if writable(request.resource.data)
+        && request.resource.data._class == resource.data._class
+        && request.resource.data._uid == resource.data._uid
+        && request.resource.data._lesson == resource.data._lesson;
+    }
+    match /users/{userId} {
+      allow read: if (signedIn() && request.auth.uid == userId) || isAdmin()
+        || (isLeader() && resource.data.role == 'user');
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == userId
+        && request.resource.data.role == 'user');
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+    match /answers/{docId} {
+      // A new lesson has no document yet; only its owner may check that path.
+      allow get: if isAdmin() || (signedIn() &&
+        (exists(/databases/$(database)/documents/answers/$(docId)) ? resource.data._uid == request.auth.uid
+          : docId.matches(request.auth.uid + '_.*')));
+      allow list: if isAdmin() || (signedIn() && resource.data._uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data._uid == request.auth.uid
+        && docId == request.auth.uid + '_' + request.resource.data._lesson;
+      allow update: if signedIn() && resource.data._uid == request.auth.uid
+        && request.resource.data._uid == resource.data._uid
+        && request.resource.data._lesson == resource.data._lesson
+        && docId == request.auth.uid + '_' + request.resource.data._lesson;
+      allow delete: if signedIn() && resource.data._uid == request.auth.uid;
+    }
+  }
+}

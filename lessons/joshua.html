@@ -1,0 +1,41 @@
+---
+layout: default
+title: "Иисус Навин — Уроки"
+---
+
+<section class="container">
+  <div style="padding-top: 40px;">
+    <a href="{{ '/lessons/' | relative_url }}" class="back-link">&larr; Все курсы</a>
+    <h1>Иисус Навин</h1>
+    <p style="color: var(--text-light); margin-bottom: 8px;">Нав. 1-24 &middot; 6 уроков для взрослых</p>
+    <p>Как Бог приводит Свой народ в обетованную землю. Вера и послушание.</p>
+  </div>
+
+  <ul class="lessons-list">
+    {% assign sorted = site.lessons | where: "course", "joshua" | sort: "order" %}
+    {% for lesson in sorted %}
+    <li>
+      <a href="{{ lesson.url | relative_url }}" data-lesson="{{ lesson.slug }}">
+        <span class="lesson-num">{{ lesson.order }}</span>
+        <div class="lesson-info">
+          <h3>{{ lesson.title }}</h3>
+          <p>{{ lesson.reference }}</p>
+        </div>
+        <span class="lesson-status" id="status-{{ lesson.slug }}">Пройден</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script>
+window.addEventListener('bible-auth-ready', function(e) {
+  if (!e.detail.user) return;
+  BibleDB.getUserAnswers(e.detail.user.uid).then(function(answers) {
+    Object.keys(answers).forEach(function(slug) {
+      var el = document.getElementById('status-' + slug);
+      if (el) el.classList.add('visible');
+    });
+  });
+});
+</script>

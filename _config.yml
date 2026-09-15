@@ -1,0 +1,39 @@
+title: "Изучение Библии"
+description: "Платформа для изучения Библии в группах и индивидуально"
+baseurl: ""
+url: ""
+permalink: pretty
+
+# Тема оформления по умолчанию для неавторизованных пользователей.
+# Доступные значения: original (классика), papyrus (журнал),
+# hearth (тёплый), covenant (тёмный современный).
+default_theme: original
+
+collections:
+  lessons:
+    output: true
+    permalink: /lessons/:slug/
+
+defaults:
+  - scope:
+      path: ""
+      type: "lessons"
+    values:
+      layout: "lesson"
+
+exclude:
+  - android
+  - Gemfile
+  - Gemfile.lock
+  - "*.docx"
+  - "*.log"
+  - node_modules
+  - vendor
+  - firebase.json
+  - firestore.rules
+  - tests
+  - package.json
+  - package-lock.json
+  - README.md
+  - AGENTS.md
+  - gen_presentation.py

@@ -1,0 +1,18 @@
+---
+layout: default
+title: "Приглашение в класс"
+extra_js:
+  - /assets/js/invite.js
+---
+<section class="container" style="max-width:640px;padding-top:40px;padding-bottom:40px">
+  <h1>Приглашение в класс</h1>
+  <p>Подтвердите email из приглашения и задайте пароль для входа на сайт. Если вы уже учились здесь, ваши ответы сохранятся.</p>
+  <form id="acceptInviteForm">
+    <div class="form-group"><label for="inviteEmail">Email, на который пришло письмо</label><input id="inviteEmail" type="email" autocomplete="email" required></div>
+    <div class="form-group"><label for="invitePassword">Новый пароль (не менее 8 символов)</label><input id="invitePassword" type="password" autocomplete="new-password" minlength="8" required></div>
+    <div class="form-group"><label for="invitePasswordAgain">Повторите пароль</label><input id="invitePasswordAgain" type="password" autocomplete="new-password" minlength="8" required></div>
+    <button type="submit" class="btn btn-primary">Принять приглашение</button>
+  </form>
+  <p id="inviteStatus" role="status"></p>
+  <p><a href="/classes/">Перейти к моим классам</a></p>
+</section>

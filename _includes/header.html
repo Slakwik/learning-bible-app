@@ -1,0 +1,18 @@
+<a class="skip-link" href="#mainContent">Перейти к содержимому</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="{{ '/' | relative_url }}" class="logo" aria-label="Изучение Библии — главная">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5c-3-2-7-2-10-1v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z"/><path d="M12 5v15"/></svg>
+      <span>{{ site.title }}</span>
+    </a>
+    <nav class="main-nav" id="mainNav" aria-label="Основная навигация">
+      <a href="{{ '/classes/' | relative_url }}">Классы</a>
+      <a href="{{ '/lessons/' | relative_url }}">Курсы</a>
+      <a href="{{ '/about/' | relative_url }}">О платформе</a>
+    </nav>
+    <div class="nav-auth" id="authNav" aria-label="Аккаунт">
+      <a href="{{ '/profile/' | relative_url }}" class="profile-link" aria-label="Личный кабинет"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span class="profile-label">Профиль</span></a>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Открыть меню" aria-controls="mainNav" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  </div>
+</header>

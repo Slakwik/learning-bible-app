@@ -1,0 +1,482 @@
+/* =============================================================
+   THEMES
+   Темы переключаются через [data-theme="..."] на <html>.
+   Доступные темы:
+     - original (default, не требует data-theme)
+     - papyrus  (журнал, тёплая бумага + вино)
+     - hearth   (тёплый, терракота + шалфей)
+     - covenant (тёмный современный, янтарь)
+   ============================================================= */
+
+/* Подгружаем шрифты для всех тем сразу,
+   чтобы переключение было мгновенным. */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Newsreader:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ==========================================================
+   THEME: papyrus — журнальная типографика, кремовая бумага
+   ========================================================== */
+[data-theme="papyrus"] {
+  --primary: #1a1714;
+  --primary-light: #4a4339;
+  --accent: #6b1f2c;
+  --accent-light: #9d3a48;
+  --bg: #f4efe2;
+  --bg-card: #faf6e8;
+  --text: #1a1714;
+  --text-light: #5b5246;
+  --border: #c9bfa9;
+  --radius: 4px;
+  --shadow: none;
+  --shadow-md: 0 1px 0 rgba(26,23,20,0.04);
+  --shadow-lg: 0 2px 0 rgba(26,23,20,0.06);
+  --font-body: 'PT Serif', Georgia, serif;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+}
+[data-theme="papyrus"] body {
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(180,138,62,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(107,31,44,0.03) 0%, transparent 50%),
+    var(--bg);
+}
+[data-theme="papyrus"] h1,
+[data-theme="papyrus"] h2 {
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+[data-theme="papyrus"] h1 em,
+[data-theme="papyrus"] h2 em {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+[data-theme="papyrus"] .site-header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: none;
+}
+[data-theme="papyrus"] .logo {
+  font-family: var(--font-heading);
+  font-style: italic;
+  color: var(--text) !important;
+}
+[data-theme="papyrus"] .main-nav a {
+  font-family: 'PT Sans', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-light);
+}
+[data-theme="papyrus"] .main-nav a:hover { color: var(--accent) !important; }
+[data-theme="papyrus"] .btn,
+[data-theme="papyrus"] .btn-primary,
+[data-theme="papyrus"] .btn-accent {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-family: 'PT Sans', sans-serif;
+  padding: 14px 28px;
+}
+[data-theme="papyrus"] .btn-primary,
+[data-theme="papyrus"] .btn-accent {
+  background: var(--text);
+  border: 1px solid var(--text);
+  color: var(--bg);
+}
+[data-theme="papyrus"] .btn-primary:hover,
+[data-theme="papyrus"] .btn-accent:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+[data-theme="papyrus"] .btn-outline {
+  border: 1px solid var(--text);
+  color: var(--text);
+  background: transparent;
+}
+[data-theme="papyrus"] .btn-outline:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+[data-theme="papyrus"] .course-card,
+[data-theme="papyrus"] .feature-card,
+[data-theme="papyrus"] .about-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-theme="papyrus"] .course-card-header h3 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+[data-theme="papyrus"] .hero {
+  background: var(--bg) !important;
+  color: var(--text);
+}
+[data-theme="papyrus"] .hero::before,
+[data-theme="papyrus"] .hero::after { display: none; }
+[data-theme="papyrus"] .hero h1 {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-weight: 300;
+}
+[data-theme="papyrus"] .hero p,
+[data-theme="papyrus"] .hero-verse { color: var(--text-light); }
+[data-theme="papyrus"] .hero-verse { font-family: var(--font-heading); font-style: italic; }
+[data-theme="papyrus"] .site-footer {
+  background: var(--text);
+  color: var(--bg);
+  border-top: 1px solid var(--text);
+}
+
+/* ==========================================================
+   THEME: hearth — тёплый, терракотовый
+   ========================================================== */
+[data-theme="hearth"] {
+  --primary: #2a221a;
+  --primary-light: #6b5d4c;
+  --accent: #c66a4f;
+  --accent-light: #d4895a;
+  --bg: #faf6ef;
+  --bg-card: #ffffff;
+  --text: #2a221a;
+  --text-light: #6b5d4c;
+  --border: #ddd0b8;
+  --radius: 18px;
+  --shadow: 0 1px 2px rgba(72,44,16,0.04), 0 4px 16px rgba(72,44,16,0.06);
+  --shadow-md: 0 2px 4px rgba(72,44,16,0.05), 0 8px 24px rgba(72,44,16,0.08);
+  --shadow-lg: 0 4px 8px rgba(72,44,16,0.06), 0 16px 40px rgba(72,44,16,0.10);
+  --font-body: 'Newsreader', Georgia, serif;
+  --font-heading: 'Fraunces', Georgia, serif;
+}
+[data-theme="hearth"] body {
+  background:
+    radial-gradient(circle at 80% 0%, rgba(198,106,79,0.07) 0%, transparent 40%),
+    radial-gradient(circle at 0% 100%, rgba(107,142,99,0.05) 0%, transparent 40%),
+    var(--bg);
+}
+[data-theme="hearth"] h1,
+[data-theme="hearth"] h2 {
+  font-weight: 500;
+  color: var(--text);
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+[data-theme="hearth"] h1 em,
+[data-theme="hearth"] h2 em {
+  font-style: italic;
+  color: var(--accent);
+}
+[data-theme="hearth"] .site-header {
+  background: rgba(250,246,239,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="hearth"] .main-nav a { color: var(--text-light); }
+[data-theme="hearth"] .main-nav a:hover { color: var(--accent) !important; }
+[data-theme="hearth"] .logo {
+  font-family: var(--font-heading);
+  font-weight: 500;
+}
+[data-theme="hearth"] .btn,
+[data-theme="hearth"] .btn-primary,
+[data-theme="hearth"] .btn-accent {
+  border-radius: 999px;
+  font-family: var(--font-body);
+}
+[data-theme="hearth"] .btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+[data-theme="hearth"] .btn-primary:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(198,106,79,0.3);
+}
+[data-theme="hearth"] .btn-accent {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  box-shadow: 0 2px 8px rgba(198,106,79,0.25);
+}
+[data-theme="hearth"] .btn-accent:hover {
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+[data-theme="hearth"] .btn-outline {
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: transparent;
+}
+[data-theme="hearth"] .btn-outline:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: var(--text-light);
+}
+[data-theme="hearth"] .course-card,
+[data-theme="hearth"] .feature-card,
+[data-theme="hearth"] .about-card {
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+[data-theme="hearth"] .course-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(198,106,79,0.3);
+}
+[data-theme="hearth"] .hero {
+  background: linear-gradient(135deg, rgba(240,212,200,0.4) 0%, rgba(250,246,239,1) 60%) !important;
+  color: var(--text);
+}
+[data-theme="hearth"] .hero::before,
+[data-theme="hearth"] .hero::after { display: none; }
+[data-theme="hearth"] .hero h1,
+[data-theme="hearth"] .hero p { color: var(--text); }
+[data-theme="hearth"] .hero-verse { color: var(--text-light); font-family: var(--font-heading); font-style: italic; }
+[data-theme="hearth"] .site-footer {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* ==========================================================
+   THEME: covenant — тёмный современный
+   ========================================================== */
+[data-theme="covenant"] {
+  --primary: #f3eee0;
+  --primary-light: #c9c3b1;
+  --accent: #f4c430;
+  --accent-light: #ffd967;
+  --bg: #0a0d18;
+  --bg-card: #11162a;
+  --text: #f3eee0;
+  --text-light: #9aa1b6;
+  --border: rgba(255,255,255,0.08);
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+  --font-body: 'Geist', system-ui, sans-serif;
+  --font-heading: 'Instrument Serif', Georgia, serif;
+}
+[data-theme="covenant"] body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(244,196,48,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(229,74,107,0.04) 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+[data-theme="covenant"] h1,
+[data-theme="covenant"] h2 {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+[data-theme="covenant"] h1 em,
+[data-theme="covenant"] h2 em {
+  font-style: italic;
+  background: linear-gradient(120deg, var(--accent) 0%, #ffd967 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[data-theme="covenant"] h3 { color: var(--text); }
+[data-theme="covenant"] p { color: var(--text-light); }
+[data-theme="covenant"] .site-header {
+  background: rgba(17,22,42,0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="covenant"] .logo,
+[data-theme="covenant"] .logo span {
+  color: var(--text) !important;
+  font-family: var(--font-heading);
+}
+[data-theme="covenant"] .main-nav a { color: var(--text-light); }
+[data-theme="covenant"] .main-nav a:hover { color: var(--accent) !important; }
+[data-theme="covenant"] .btn,
+[data-theme="covenant"] .btn-primary,
+[data-theme="covenant"] .btn-accent,
+[data-theme="covenant"] .btn-outline {
+  border-radius: 999px;
+  font-family: var(--font-body);
+}
+[data-theme="covenant"] .btn-primary,
+[data-theme="covenant"] .btn-accent {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  box-shadow: 0 0 0 1px rgba(244,196,48,0.5), 0 8px 32px rgba(244,196,48,0.2);
+  font-weight: 500;
+}
+[data-theme="covenant"] .btn-primary:hover,
+[data-theme="covenant"] .btn-accent:hover {
+  background: var(--accent-light);
+  box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(244,196,48,0.35);
+  transform: translateY(-1px);
+}
+[data-theme="covenant"] .btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+[data-theme="covenant"] .btn-outline:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--text-light);
+}
+[data-theme="covenant"] .course-card,
+[data-theme="covenant"] .feature-card,
+[data-theme="covenant"] .about-card,
+[data-theme="covenant"] .lessons-list a,
+[data-theme="covenant"] .question-block,
+[data-theme="covenant"] .my-answers-page .answer-lesson-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+[data-theme="covenant"] .course-card:hover {
+  border-color: rgba(255,255,255,0.16);
+  transform: translateY(-2px);
+}
+[data-theme="covenant"] .course-card-body p { color: var(--text-light); }
+[data-theme="covenant"] .course-meta { color: var(--text-light); }
+[data-theme="covenant"] .hero {
+  background: transparent !important;
+  color: var(--text);
+}
+[data-theme="covenant"] .hero::before,
+[data-theme="covenant"] .hero::after { display: none; }
+[data-theme="covenant"] .hero h1 { color: var(--text); }
+[data-theme="covenant"] .hero p { color: var(--text-light); }
+[data-theme="covenant"] .hero-verse { color: var(--text); font-family: var(--font-heading); font-style: italic; }
+[data-theme="covenant"] .hero-verse span { color: var(--text-light); }
+[data-theme="covenant"] .site-footer {
+  background: var(--bg-card);
+  color: var(--text-light);
+  border-top: 1px solid var(--border);
+}
+[data-theme="covenant"] textarea,
+[data-theme="covenant"] input[type="text"],
+[data-theme="covenant"] input[type="email"],
+[data-theme="covenant"] input[type="password"] {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+[data-theme="covenant"] textarea:focus,
+[data-theme="covenant"] input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(244,196,48,0.1);
+}
+[data-theme="covenant"] table th { background: var(--bg-card); color: var(--text); }
+[data-theme="covenant"] table td { color: var(--text-light); }
+[data-theme="covenant"] .lesson-content blockquote {
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
+  color: var(--text);
+}
+[data-theme="covenant"] a { color: var(--accent); }
+[data-theme="covenant"] a:hover { color: var(--accent-light); }
+[data-theme="covenant"] .nav-auth .auth-name { color: var(--text); }
+
+/* ==========================================================
+   Theme picker UI (используется в profile.html)
+   ========================================================== */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.theme-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  cursor: pointer;
+  background: var(--bg-card);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+.theme-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.theme-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.04);
+}
+.theme-card.active::before {
+  content: '✓';
+  position: absolute;
+  z-index: 2;
+}
+.theme-card-preview {
+  height: 110px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.theme-card-preview-original {
+  background: linear-gradient(135deg, #fafaf8 0%, #f4f1e8 100%);
+  color: #1a365d;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+}
+.theme-card-preview-original em { color: #c9963b; font-style: italic; font-weight: 700; }
+.theme-card-preview-papyrus {
+  background: #f4efe2;
+  color: #1a1714;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+}
+.theme-card-preview-papyrus em { color: #6b1f2c; font-style: italic; font-weight: 400; }
+.theme-card-preview-hearth {
+  background: linear-gradient(135deg, #faf6ef 0%, #f1e9d8 100%);
+  color: #2a221a;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 400;
+}
+.theme-card-preview-hearth em { color: #c66a4f; font-style: italic; }
+.theme-card-preview-covenant {
+  background: linear-gradient(135deg, #0a0d18 0%, #11162a 100%);
+  color: #f3eee0;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+}
+.theme-card-preview-covenant em {
+  font-style: italic;
+  background: linear-gradient(120deg, #f4c430, #e54a6b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.theme-card-body { padding: 16px 20px; }
+.theme-card-name { font-weight: 600; margin-bottom: 4px; }
+.theme-card-desc { color: var(--text-light); font-size: 14px; line-height: 1.45; }
+.theme-card-check {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.theme-card.active .theme-card-check { display: flex; }
+
+/* Navigation and tables share the same readable controls in every theme. */
+[data-theme="original"] .btn-primary,
+[data-theme="original"] .btn-accent { color:#172b46; }
+[data-theme="covenant"] .admin-table th { background:#202940; color:var(--text); }
+[data-theme="papyrus"] .main-nav a { font-size:12px; letter-spacing:.06em; }
+@media(max-width:600px) { [data-theme="papyrus"] .main-nav a { font-size:14px; } }

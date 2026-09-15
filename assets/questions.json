@@ -1,0 +1,19 @@
+---
+layout: null
+---
+{
+{% for lesson in site.lessons %}
+  "{{ lesson.slug }}": {
+    {% assign parts = lesson.content | split: '<label for="' %}
+    {% for part in parts %}
+      {% if forloop.first %}{% continue %}{% endif %}
+      {% assign id_rest = part | split: '">' %}
+      {% assign qid = id_rest[0] %}
+      {% assign text_rest = id_rest[1] | split: '</label>' %}
+      {% assign qtext = text_rest[0] | strip_html | strip | replace: '"', '\"' | replace: '
+', ' ' %}
+      "{{ qid }}": "{{ qtext }}"{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  }{% unless forloop.last %},{% endunless %}
+{% endfor %}
+}

@@ -1,0 +1,164 @@
+---
+layout: default
+title: "Мои ответы"
+---
+
+<section class="my-answers-page">
+  <div class="container">
+    <div style="padding-top: 40px;">
+      <a href="{{ '/lessons/' | relative_url }}" class="back-link">&larr; Курсы</a>
+      <h1>Мои ответы</h1>
+      <p>Здесь — ответы для личного изучения. Ответы по программе группы доступны в <a href="/classes/">вашем классе</a>.</p>
+      <p style="color: var(--text-light); margin-bottom: 24px;">Выберите курс, чтобы просмотреть или распечатать свои ответы.</p>
+    </div>
+
+    <div id="authGate" style="display:none;">
+      <div class="auth-gate-message">
+        <p>Для просмотра ответов необходимо войти в систему.</p>
+        <a href="{{ '/login/' | relative_url }}" class="btn btn-primary">Войти</a>
+      </div>
+    </div>
+
+    <div id="answersApp" style="display:none;">
+      <div class="answers-controls no-print">
+        <div class="form-group" style="max-width:300px;">
+          <label for="courseSelect">Курс</label>
+          <select id="courseSelect">
+            <option value="">— выберите курс —</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm" id="printBtn" style="display:none;" onclick="window.print()">&#128424; Распечатать</button>
+      </div>
+
+      <div id="answersOutput"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+window.addEventListener('bible-auth-ready', function(e) {
+  var fbUser = e.detail.user;
+  var profile = e.detail.profile;
+  if (!fbUser) {
+    document.getElementById('authGate').style.display = '';
+    return;
+  }
+  document.getElementById('answersApp').style.display = '';
+  var currentUid = fbUser.uid;
+
+  var COURSES = {};
+  {% assign courses_list = site.lessons | map: "course" | uniq %}
+  {% for course_id in courses_list %}
+  {% assign course_lessons = site.lessons | where: "course", course_id | sort: "order" %}
+  COURSES["{{ course_id }}"] = {
+    name: "{{ course_lessons.first.course | replace: 'james', 'Послание Иакова' | replace: 'ephesians', 'Послание к Ефесянам' | replace: 'galatians', 'Послание к Галатам' | replace: 'philippians', 'Послание к Филиппийцам' | replace: 'proverbs', 'Мудрость Соломона' | replace: 'christian-life', 'Жизнь христианина' | replace: 'deuteronomy', 'Второзаконие' | replace: 'mark', 'Евангелие от Марка' | replace: 'genesis1', 'Бытие (часть 1)' | replace: 'genesis2', 'Бытие (часть 2)' | replace: 'joshua', 'Иисус Навин' | replace: 'amos-isaiah', 'Амос и Исаия' | replace: 'daniel', 'Даниил' | replace: 'acts1', 'Деяния (часть 1)' | replace: 'acts2', 'Деяния (часть 2)' | replace: 'corinthians1', '1 Коринфянам' | replace: 'corinthians2', '2 Коринфянам' | replace: 'thessalonians', '1-2 Фессалоникийцам' | replace: 'first-john', 'Послание 1 Иоанна' | replace: 'prayer', 'Если будете молиться' | replace: 'bible-book', 'Библия: Божья удивительная книга' }}",
+    lessons: [
+      {% for lesson in course_lessons %}
+      { slug: "{{ lesson.slug }}", title: "{{ lesson.title }}", reference: "{{ lesson.reference }}" }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  };
+  {% endfor %}
+
+  var select = document.getElementById('courseSelect');
+  var output = document.getElementById('answersOutput');
+  var printBtn = document.getElementById('printBtn');
+  var questionsData = null;
+
+  // Load questions data
+  fetch('{{ "/assets/questions.json" | relative_url }}')
+    .then(function(r) { return r.json(); })
+    .then(function(data) { questionsData = data; })
+    .catch(function() { questionsData = {}; });
+
+  Object.keys(COURSES).forEach(function(key) {
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = COURSES[key].name;
+    select.appendChild(opt);
+  });
+
+  function getQuestionText(slug, qid) {
+    if (questionsData && questionsData[slug] && questionsData[slug][qid]) {
+      return questionsData[slug][qid];
+    }
+    return null;
+  }
+
+  select.addEventListener('change', function() {
+    var courseKey = this.value;
+    if (!courseKey) {
+      output.innerHTML = '';
+      printBtn.style.display = 'none';
+      return;
+    }
+
+    var course = COURSES[courseKey];
+    output.innerHTML = '<p style="color:var(--text-light);">Загрузка...</p>';
+
+    BibleDB.getUserAnswers(currentUid).then(function(allAnswers) {
+      var hasAny = false;
+      var profileName = profile ? profile.name : '';
+
+      var html = '<div class="print-header">';
+      html += '<h2>' + esc(course.name) + '</h2>';
+      html += '<p class="print-meta">' + esc(profileName) + '</p>';
+      html += '</div>';
+
+      course.lessons.forEach(function(lesson) {
+        var answers = allAnswers[lesson.slug];
+        if (!answers) return;
+
+        var keys = Object.keys(answers).filter(function(k) { return k.startsWith('q'); });
+        if (keys.length === 0) return;
+
+        hasAny = true;
+        html += '<div class="answer-lesson-block">';
+        html += '<h3>' + esc(lesson.title) + ' <span class="answer-ref">' + esc(lesson.reference) + '</span></h3>';
+
+        if (answers._savedAt) {
+          html += '<p class="answer-date no-print">Сохранено: ' + new Date(answers._savedAt).toLocaleString('ru') + '</p>';
+        }
+
+        keys.sort(function(a, b) {
+          var na = a.replace(/[^0-9]/g, '') || '0';
+          var nb = b.replace(/[^0-9]/g, '') || '0';
+          return parseInt(na) - parseInt(nb) || a.localeCompare(b);
+        });
+
+        keys.forEach(function(key) {
+          var qText = getQuestionText(lesson.slug, key);
+          html += '<div class="answer-item">';
+          if (qText) {
+            html += '<div class="answer-question">' + esc(qText) + '</div>';
+          } else {
+            html += '<div class="answer-question">Вопрос ' + esc(key.replace('q', '')) + '</div>';
+          }
+          html += '<div class="answer-text">' + esc(answers[key]).replace(/\n/g, '<br>') + '</div>';
+          html += '</div>';
+        });
+
+        html += '</div>';
+      });
+
+      if (!hasAny) {
+        html += '<div class="auth-gate-message" style="margin-top:24px;"><p>Вы ещё не отвечали на вопросы по этому курсу.</p></div>';
+        printBtn.style.display = 'none';
+      } else {
+        printBtn.style.display = '';
+      }
+
+      if (select.value === courseKey) output.innerHTML = html;
+    }).catch(function() {
+      output.textContent = 'Не удалось загрузить ответы. Выберите курс ещё раз, чтобы повторить попытку.';
+      printBtn.style.display = 'none';
+    });
+  });
+
+  function esc(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+});
+</script>

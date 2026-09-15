@@ -1,0 +1,41 @@
+---
+layout: default
+title: "1 Коринфянам — Уроки"
+---
+
+<section class="container">
+  <div style="padding-top: 40px;">
+    <a href="{{ '/lessons/' | relative_url }}" class="back-link">&larr; Все курсы</a>
+    <h1>1 Коринфянам</h1>
+    <p style="color: var(--text-light); margin-bottom: 8px;">1 Кор. 1-16 &middot; 17 уроков для взрослых</p>
+    <p>Как жить общиной святых в мире разделений, споров и соблазнов.</p>
+  </div>
+
+  <ul class="lessons-list">
+    {% assign sorted = site.lessons | where: "course", "corinthians1" | sort: "order" %}
+    {% for lesson in sorted %}
+    <li>
+      <a href="{{ lesson.url | relative_url }}" data-lesson="{{ lesson.slug }}">
+        <span class="lesson-num">{{ lesson.order }}</span>
+        <div class="lesson-info">
+          <h3>{{ lesson.title }}</h3>
+          <p>{{ lesson.reference }}</p>
+        </div>
+        <span class="lesson-status" id="status-{{ lesson.slug }}">Пройден</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script>
+window.addEventListener('bible-auth-ready', function(e) {
+  if (!e.detail.user) return;
+  BibleDB.getUserAnswers(e.detail.user.uid).then(function(answers) {
+    Object.keys(answers).forEach(function(slug) {
+      var el = document.getElementById('status-' + slug);
+      if (el) el.classList.add('visible');
+    });
+  });
+});
+</script>

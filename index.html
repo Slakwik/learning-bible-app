@@ -1,0 +1,43 @@
+---
+layout: default
+title: "Изучение Библии — Главная"
+---
+<link rel="stylesheet" href="{{ '/assets/css/home.css' | relative_url }}?v={{ site.time | date: '%s' }}">
+<div class="home-page">
+  <section class="container home-hero" aria-labelledby="homeTitle">
+    <div class="home-hero-copy">
+      <p class="home-eyebrow">Читать · Размышлять · Применять</p>
+      <h1 id="homeTitle">Читайте Писание.<br> Находите ответы.<br> Растите в вере.</h1>
+      <p class="home-intro">Изучайте Библию самостоятельно или вместе с группой. Уроки и вопросы помогут внимательнее прочитать текст и связать его с повседневной жизнью.</p>
+      <div class="home-actions"><a href="/lessons/" class="btn btn-primary">Выбрать курс <span aria-hidden="true">→</span></a><a href="/classes/" class="btn btn-outline">Мой класс</a></div>
+      {% assign course_count = site.lessons | map: 'course' | uniq | size %}
+      <p class="home-library-note">Курсов: {{ course_count }} <span aria-hidden="true">·</span> Уроков: {{ site.lessons.size }} <span aria-hidden="true">·</span> В своём темпе</p>
+    </div>
+    <figure class="home-scripture">
+      <img src="{{ '/assets/img/hero-bg.jpeg' | relative_url }}" alt="" width="1024" height="1024" fetchpriority="high">
+      <figcaption><blockquote>«Всё Писание богодухновенно и полезно для научения, для обличения, для исправления, для наставления в праведности»</blockquote><cite>2 Тимофею 3:16</cite></figcaption>
+    </figure>
+  </section>
+
+  <div class="container"><section class="home-news" data-global-announcements></section></div>
+
+  <section class="container home-section" aria-labelledby="homeCoursesTitle">
+    <div class="home-section-heading"><div><p class="home-eyebrow">Библиотека изучения</p><h2 id="homeCoursesTitle">С какой книги начнём?</h2></div><a class="home-text-link" href="/lessons/">Все курсы <span aria-hidden="true">→</span></a></div>
+    <div class="home-courses">
+      <a class="home-course" href="/lessons/bible-book/"><p class="home-course-label">Знакомство с Писанием</p><h3>Библия: Божья<br> удивительная книга</h3><p>Как устроена Библия и как читать её осмысленно.</p><span class="home-course-footer"><span>7 уроков</span><span aria-hidden="true">↗</span></span></a>
+      <a class="home-course" href="/lessons/mark/"><p class="home-course-label">Жизнь и служение Иисуса</p><h3>Евангелие<br> от Марка</h3><p>Пройдите по страницам Евангелия, от первых учеников до воскресения.</p><span class="home-course-footer"><span>18 уроков</span><span aria-hidden="true">↗</span></span></a>
+      <a class="home-course" href="/lessons/james/"><p class="home-course-label">Вера в повседневной жизни</p><h3>Послание<br> Иакова</h3><p>Слова, отношения, терпение и молитва: как вера проявляется в делах.</p><span class="home-course-footer"><span>6 уроков</span><span aria-hidden="true">↗</span></span></a>
+    </div>
+  </section>
+
+  <section class="container home-section" aria-labelledby="homeStudyTitle">
+    <div class="home-study">
+      <div><p class="home-eyebrow">От текста к жизни</p><h2 id="homeStudyTitle">Небольшие шаги.<br> Вдумчивое изучение.</h2><p class="home-study-intro">Для каждого урока достаточно открыть Библию, выделить время и быть готовым задавать вопросы.</p></div>
+      <ol class="home-steps"><li><h3>Прочитайте отрывок</h3><p>Обратите внимание на контекст и пояснения к тексту.</p></li><li><h3>Запишите размышления</h3><p>После входа ваши ответы сохраняются — к ним можно вернуться позже.</p></li><li><h3>Обсудите и примените</h3><p>Поделитесь вопросами на встрече класса и подумайте, что можете изменить в своей жизни.</p></li></ol>
+    </div>
+  </section>
+
+  <section class="container home-section home-group-wrap" aria-labelledby="homeGroupTitle">
+    <div class="home-group"><div><p class="home-eyebrow">Изучать вместе</p><h2 id="homeGroupTitle">Место для ваших вопросов<br> и общего разговора.</h2><p>У каждого класса свой ведущий, расписание и программа. Хотите присоединиться? Оставьте заявку, и мы свяжемся с вами для организации занятий.</p></div><div class="home-group-actions"><a class="btn btn-primary" href="/signup/">Оставить заявку</a><a class="home-text-link" href="/classes/">Уже в группе? Открыть класс <span aria-hidden="true">→</span></a></div></div>
+  </section>
+</div>

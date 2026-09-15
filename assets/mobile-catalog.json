@@ -1,0 +1,11 @@
+---
+layout: null
+---
+{
+  "schema": 1,
+  "lessons": [
+  {% for lesson in site.lessons %}
+    {"slug": {{ lesson.slug | jsonify }}, "title": {{ lesson.title | jsonify }}, "course": {{ lesson.course | jsonify }}, "order": {{ lesson.order | jsonify }}, "reference": {{ lesson.reference | jsonify }}, "body": {{ lesson.content | jsonify }}}{% unless forloop.last %},{% endunless %}
+  {% endfor %}
+  ]
+}

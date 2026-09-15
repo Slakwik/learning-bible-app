@@ -1,0 +1,58 @@
+---
+layout: default
+title: "Классы"
+extra_js:
+  - /assets/js/classes.js
+---
+<link rel="stylesheet" href="{{ '/assets/css/classes.css' | relative_url }}?v={{ site.time | date: "%s" }}">
+<section class="container classes-page">
+  <div id="classesHeading" class="class-heading"><div><h1>Классы</h1><p>Встречи, программа и участники вашей группы.</p></div><button id="newClass" class="btn btn-primary" hidden>Создать класс</button></div>
+  <section id="classesGuest" class="classes-welcome" hidden aria-labelledby="classesWelcomeTitle">
+    <div class="classes-welcome-main">
+      <p class="classes-eyebrow">Занятия в классе</p>
+      <h1 id="classesWelcomeTitle">Изучайте Библию.<br>Обсуждайте вместе.</h1>
+      <p class="classes-intro">Своя группа, внимательное чтение и живой разговор. Здесь собраны уроки, расписание и объявления вашего класса.</p>
+      <a class="classes-catalog-link" href="/lessons/">Посмотреть все курсы <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="classes-signin">
+      <svg class="classes-signin-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 10c-5-3-10-3-15-2v24c5-1 10-1 15 2 5-3 10-3 15-2V8c-5-1-10-1-15 2Z"/><path d="M20 10v24M10 15h5M10 20h5M25 15h5M25 20h5"/></svg>
+      <h2>Ваш класс — здесь</h2>
+      <p>Войдите, чтобы открыть программу занятий и продолжить изучение.</p>
+      <a href="/login/" class="btn btn-primary classes-signin-button">Войти в аккаунт <span aria-hidden="true">→</span></a>
+      <div class="classes-invite-note"><h3>Впервые на сайте?</h3><p>Попросите ведущего пригласить вас в класс. По ссылке из письма вы сможете самостоятельно задать пароль.</p></div>
+    </div>
+    <dl class="classes-benefits">
+      <div><dt><span aria-hidden="true">01</span> Понятный план</dt><dd>Уроки в нужном порядке и время следующей встречи.</dd></div>
+      <div><dt><span aria-hidden="true">02</span> Вдумчивое изучение</dt><dd>Читайте отрывки и сохраняйте ответы на вопросы к уроку.</dd></div>
+      <div><dt><span aria-hidden="true">03</span> На связи с группой</dt><dd>Объявления ведущего и подготовка к общему обсуждению.</dd></div>
+    </dl>
+  </section>
+  <section data-global-announcements></section>
+  <p id="classesStatus" role="status">Загрузка классов…</p>
+  <div id="classesList" class="classes-grid"></div>
+  <section id="classDetail" hidden></section>
+  <section id="classEditor" class="class-card" hidden>
+    <h2 id="classEditorTitle">Новый класс</h2>
+    <form id="classForm">
+      <div class="form-group"><label for="className">Название класса</label><input id="className" required maxlength="120" placeholder="Например, воскресная группа"></div>
+      <div class="form-group" id="classLeaderField" hidden><label for="classLeader">Ведущий</label><select id="classLeader"></select></div>
+      <div class="class-form-grid">
+        <div class="form-group"><label for="classDay">День недели</label><select id="classDay"><option value="0">Воскресенье</option><option value="1">Понедельник</option><option value="2">Вторник</option><option value="3">Среда</option><option value="4">Четверг</option><option value="5">Пятница</option><option value="6">Суббота</option></select></div>
+        <div class="form-group"><label for="classTime">Время начала</label><input id="classTime" type="time" required></div>
+        <div class="form-group"><label for="classDuration">Длительность, минут</label><input id="classDuration" type="number" min="15" max="480" step="5" value="60" required></div>
+        <div class="form-group"><label for="classStart">Первая встреча</label><input id="classStart" type="date" required></div>
+      </div>
+      <p class="class-muted">Встречи каждую неделю. Время московское (UTC+3).</p>
+      <div class="form-group"><label for="classPlace">Место встречи или ссылка</label><input id="classPlace" maxlength="300" placeholder="Зал, адрес или ссылка на онлайн-встречу"></div>
+      <div class="form-group"><label for="classDescription">Описание</label><textarea id="classDescription" maxlength="2000" rows="3"></textarea></div>
+      <fieldset><legend>Программа класса</legend><p>Выберите уроки из любых курсов. Порядок можно изменить ниже.</p><label for="lessonCourse">Курс</label><select id="lessonCourse"><option value="">Все курсы</option></select><label for="lessonSearch">Найти урок</label><input id="lessonSearch" type="search" placeholder="Название урока или курс"><div id="lessonPicker" class="class-picker"></div><h3>Порядок уроков</h3><ol id="selectedLessons" class="class-selected"></ol></fieldset>
+      <fieldset><legend>Ученики</legend><p>Добавляйте зарегистрированных учеников. Новые аккаунты создаёт администратор.</p><label for="studentSearch">Найти ученика</label><input id="studentSearch" type="search" placeholder="Имя или email"><div id="studentPicker" class="class-picker"></div><p id="studentCount"></p></fieldset>
+      <label class="class-check"><input id="classArchived" type="checkbox"> Класс завершён (архив)</label>
+      <p id="classFormError" class="form-error visible" role="alert"></p>
+      <div class="class-actions"><button type="submit" class="btn btn-primary">Сохранить класс</button><button id="cancelClass" type="button" class="btn btn-outline">Отмена</button></div>
+    </form>
+  </section>
+</section>
+<script id="classLessonCatalog" type="application/json">[
+{% assign sorted_lessons = site.lessons | sort: 'order' %}{% for lesson in sorted_lessons %}{"slug":{{ lesson.slug | jsonify }},"title":{{ lesson.title | jsonify }},"course":{{ lesson.course | jsonify }},"reference":{{ lesson.reference | jsonify }},"url":{{ lesson.url | relative_url | jsonify }}}{% unless forloop.last %},{% endunless %}{% endfor %}
+]</script>

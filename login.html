@@ -1,0 +1,24 @@
+---
+layout: default
+title: "Вход"
+---
+
+<section class="login-page">
+  <div class="login-card">
+    <h2>&#128274; Вход</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Email</label>
+        <input type="email" id="username" required autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <div class="form-error" id="loginError">Неверный email или пароль</div>
+      <button type="submit" class="btn btn-primary">Войти</button>
+    </form>
+    <button type="button" class="btn btn-outline" id="forgotPassword" style="margin-top:16px">Забыли пароль?</button>
+    <p id="passwordResetStatus" role="status" style="margin-top:12px"></p>
+  </div>
+</section>
