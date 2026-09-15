@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      YOUVERSION_APP_KEY: ${{ secrets.YOUVERSION_APP_KEY }}
+      YOUVERSION_BIBLE_ID: ${{ vars.YOUVERSION_BIBLE_ID || '167' }}
     defaults: { run: { working-directory: android } }
     steps:
       - uses: actions/checkout@v4

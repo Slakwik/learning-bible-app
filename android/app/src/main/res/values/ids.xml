@@ -4,4 +4,5 @@
     <item name="bottom_navigation" type="id" />
     <item name="login_email" type="id" />
     <item name="login_password" type="id" />
+    <item name="bible_passage_text" type="id" />
 </resources>
