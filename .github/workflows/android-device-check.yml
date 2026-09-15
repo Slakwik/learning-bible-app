@@ -22,9 +22,9 @@ jobs:
           PREVIEW_KEYSTORE_BASE64: ${{ secrets.ANDROID_PREVIEW_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$PREVIEW_KEYSTORE_BASE64" ]; then
-            mkdir -p "$HOME/.android"
-            printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
-            chmod 600 "$HOME/.android/debug.keystore"
+            printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/bible-preview.jks"
+            chmod 600 "$RUNNER_TEMP/bible-preview.jks"
+            echo "ANDROID_PREVIEW_KEYSTORE_PATH=$RUNNER_TEMP/bible-preview.jks" >> "$GITHUB_ENV"
           elif [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "Configure ANDROID_PREVIEW_KEYSTORE_BASE64 before publishing preview APKs."
             exit 1

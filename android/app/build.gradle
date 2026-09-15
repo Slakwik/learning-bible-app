@@ -7,6 +7,14 @@ def copyLessons = tasks.register('copyLessons', Copy) {
 
 android { namespace 'ru.spbchurch.biblelearning'; compileSdk 35
     signingConfigs {
+        debug {
+            if (System.getenv('ANDROID_PREVIEW_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('ANDROID_PREVIEW_KEYSTORE_PATH'))
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
         release {
             if (System.getenv('ANDROID_KEYSTORE_PATH')) {
                 storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
