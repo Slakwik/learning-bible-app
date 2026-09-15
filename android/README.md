@@ -1,6 +1,6 @@
 # Изучение Библии · Android
 
-Нативное Kotlin-приложение без WebView. Основано на [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning), сервер ответов — существующий Firebase-проект сайта. Версия [0.3.0-preview](https://github.com/Slakwik/learning-bible-app/releases/tag/preview-0.3.0). Сборка и автоматические проверки завершены; полная ручная приёмка продолжается.
+Нативное Kotlin-приложение без WebView. Основано на [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning), сервер ответов — существующий Firebase-проект сайта. Версия [0.3.1-preview](https://github.com/Slakwik/learning-bible-app/releases/tag/preview-0.3.1). Сборка и автоматические проверки завершены; полная ручная приёмка продолжается.
 
 ## Интерфейс
 
