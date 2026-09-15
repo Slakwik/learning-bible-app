@@ -1,6 +1,6 @@
 # Изучение Библии · Android
 
-Нативное Kotlin-приложение без WebView. Основано на [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning), сервер ответов — существующий Firebase-проект сайта. Версия 0.3.0-preview. Изменения классов и дизайна проходят проверку перед публикацией.
+Нативное Kotlin-приложение без WebView. Основано на [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning), сервер ответов — существующий Firebase-проект сайта. Версия [0.3.0-preview](https://github.com/Slakwik/learning-bible-app/releases/tag/preview-0.3.0). Сборка и автоматические проверки завершены; полная ручная приёмка продолжается.
 
 ## Интерфейс
 
@@ -112,3 +112,7 @@ Firebase пока использует публичную конфигураци
 ## Дизайн и планы
 
 [Дизайн Android 10+](../docs/android-design.md), [совместимость с классами](../docs/android-class-integration.md), [план развития](../docs/android-roadmap.md). Экспорт v3 содержит отдельные объекты `lessons` для личных ответов и `classes` для ответов классов; автоматического копирования между ними нет.
+
+## Проверка 0.3.0-preview
+
+CI [35019622882](https://github.com/Slakwik/learning-bible-app/actions/runs/35019622882): 30 JVM-тестов, Lint без ошибок (15 предупреждений), assembleDebug. Локально прошли 7 проверок исходников и 29 сценариев Firestore Emulator. На Samsung Galaxy S9+ Android 10 проверены запуск, светлый каталог, переход к курсу/уроку, настройки и открытие формы входа. Полная проверка ведущего, обмена с сайтом, TalkBack, шрифта 200% и тёмной темы ещё не завершена.
