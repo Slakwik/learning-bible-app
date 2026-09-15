@@ -25,9 +25,12 @@ class LessonActivity : BaseActivity() {
     private lateinit var status: TextView
     private var record: AnswerRecord? = null
     private val classId: String? get() = intent.getStringExtra("classId")?.takeIf { it.isNotBlank() }
+    private val studentUid: String? get() = intent.getStringExtra("studentUid")
+    private val reviewing: Boolean get() = studentUid != null
+    private var reviewRecord: AnswerRecord? = null
     private var studyClass: StudyClass? = null
-    private val canWrite: Boolean get() = classId == null || studyClass?.canWrite(owner, lesson.slug) == true
-    private fun positionKey() = classId?.let { "class:$it:${lesson.slug}" } ?: lesson.slug
+    private val canWrite: Boolean get() = !reviewing && (classId == null || studyClass?.canWrite(owner, lesson.slug) == true)
+    private fun positionKey() = classId?.let { "class:$it:${studentUid ?: owner}:${lesson.slug}" } ?: lesson.slug
     private var loading = false
     private var editingSession = false
     private var writeFailed = false
@@ -74,7 +77,8 @@ class LessonActivity : BaseActivity() {
                     studyClass = ClassRepository().get(owner, id)
                     val slug = intent.getStringExtra("slug").orEmpty()
                     check(slug in studyClass!!.lessonSlugs) { "Lesson no longer in class" }
-                    withContext(Dispatchers.IO) { SyncEngine.readClassLesson(appContext, owner, id, slug) }
+                    if (reviewing) reviewRecord = ClassRepository().studentAnswers(owner, id, studentUid!!, slug)
+                    else withContext(Dispatchers.IO) { SyncEngine.readClassLesson(appContext, owner, id, slug) }
                 }
             }
         } catch (e: CancellationException) {
@@ -88,7 +92,7 @@ class LessonActivity : BaseActivity() {
             val result = runCatching {
                 val item = LessonRepository(appContext).get(intent.getStringExtra("slug").orEmpty())
                     ?: error("Урок не найден")
-                item to AnswerStore.get(appContext).record(owner, item.slug, classId)
+                item to (if (reviewing) checkNotNull(reviewRecord) else AnswerStore.get(appContext).record(owner, item.slug, classId))
             }
             runOnUiThread {
                 loading = false
@@ -120,15 +124,17 @@ class LessonActivity : BaseActivity() {
         content.addView(text(lesson.reference, 16, muted = true))
         content.addView(text(studyClass?.let { "Класс: ${it.name} · Ведущий: ${it.leader}" }
             ?: "Личное изучение", 15, true))
-        if (!canWrite) content.addView(text("Только чтение: класс архивирован или вы не участник.", 16, true))
+        if (reviewing) content.addView(text("Ответы ученика: ${intent.getStringExtra("studentName").orEmpty()} · только просмотр", 16, true))
+        else if (!canWrite) content.addView(text("Только чтение: класс архивирован или вы не участник.", 16, true))
         val marks = getSharedPreferences("bookmarks", MODE_PRIVATE)
         val key = owner + ":" + positionKey()
-        content.addView(action(if (marks.getBoolean(key, false)) "Убрать закладку" else "В закладки", false) {
+        if (!reviewing) content.addView(action(if (marks.getBoolean(key, false)) "Убрать закладку" else "В закладки", false) {
             marks.edit().putBoolean(key, !marks.getBoolean(key, false)).apply()
             load()
         })
         content.addView(action("Оформление чтения", false) { launchSettings() })
-        status = text(if (saved.remoteConflict != null) "Есть две версии — сравните их ниже."
+        status = text(if (reviewing) "Ответы класса загружены с сайта · изменения недоступны"
+            else if (saved.remoteConflict != null) "Есть две версии — сравните их ниже."
             else if (owner == AnswerStore.GUEST) "Черновики сохраняются только на этом телефоне."
             else if (saved.dirty) "Сохранено на телефоне · ожидает синхронизации"
             else "Локальная копия · изменения сохраняются при вводе", 13, muted = true)
@@ -173,6 +179,7 @@ class LessonActivity : BaseActivity() {
                     edit.setText(saved.values[block.id].orEmpty())
                     edit.isEnabled = canWrite && saved.remoteConflict == null
                     edit.doAfterTextChanged { value ->
+                        if (!canWrite) return@doAfterTextChanged
                         val snapshot = value.toString()
                         status.text = "Сохраняется на телефоне…"
                         val slug = lesson.slug
@@ -197,7 +204,7 @@ class LessonActivity : BaseActivity() {
             confirm("Войти?", "Гостевые черновики останутся отдельно на телефоне и не будут автоматически отправлены в аккаунт.", "Войти") {
                 startActivity(Intent(this, LoginActivity::class.java))
             }
-        }) else content.addView(action("Синхронизировать сейчас") {
+        }) else if (!reviewing) content.addView(action("Синхронизировать сейчас") {
             // Do not allow typing during an explicit refresh of the lesson.
             if (writeFailed) { message("Сначала сохраните текст: возникла ошибка памяти."); return@action }
             loading = true
@@ -222,7 +229,7 @@ class LessonActivity : BaseActivity() {
             listOf(-1, 1).forEach { step ->
                 group.lessonSlugs.getOrNull(index + step)?.let { slug ->
                     content.addView(action(if (step < 0) "Предыдущий урок класса" else "Следующий урок класса", false) {
-                        startActivity(Intent(this, LessonActivity::class.java).putExtra("slug", slug).putExtra("classId", group.id))
+                        startActivity(Intent(this, LessonActivity::class.java).putExtra("slug", slug).putExtra("classId", group.id).putExtra("studentUid", studentUid).putExtra("studentName", intent.getStringExtra("studentName")))
                         finish()
                     })
                 }

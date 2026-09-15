@@ -22,6 +22,11 @@ class MainActivity : BaseActivity() {
     private var classTab = false
     private var selectedClassId: String? = null
     private var classes: List<StudyClass>? = null
+    private var studentsMode = false
+    private var students: List<ClassStudent>? = null
+    private var selectedStudent: ClassStudent? = null
+    private var rosterLoading = false
+    private var rosterError: String? = null
     private var classError: String? = null
     private var query = ""
     private var generation = 0
@@ -36,6 +41,8 @@ class MainActivity : BaseActivity() {
             override fun handleOnBackPressed() {
                 when {
                     course != null -> { course = null; renderResults() }
+                    classTab && selectedStudent != null -> { selectedStudent = null; renderResults() }
+                    classTab && studentsMode -> { studentsMode = false; renderResults() }
                     classTab && selectedClassId != null -> { selectedClassId = null; renderResults() }
                     classTab -> { classTab = false; build() }
                     else -> finish()
@@ -57,6 +64,10 @@ class MainActivity : BaseActivity() {
         val request = ++generation
         val owner = uid()
         classes = null
+        students = null
+        selectedStudent = null
+        rosterLoading = false
+        rosterError = null
         classError = null
         lifecycleScope.launch {
             try {
@@ -117,7 +128,7 @@ class MainActivity : BaseActivity() {
             selectedItemId = if (classTab) 2 else 1
             setOnItemSelectedListener { item ->
                 if (item.itemId == 3) { launchSettings(); false }
-                else { classTab = item.itemId == 2; course = null; selectedClassId = null; build(); true }
+                else { classTab = item.itemId == 2; course = null; selectedClassId = null; studentsMode = false; selectedStudent = null; students = null; build(); true }
             }
         }
         root.addView(navigation)
@@ -164,17 +175,23 @@ class MainActivity : BaseActivity() {
                 addView(text("Ведущий: ${item.leader}", 15))
                 addView(text(item.schedule(), 14, muted = true))
                 addView(text("Уроков в программе: ${item.lessonSlugs.size}" + if (item.archived) " · Архив" else "", 14))
-                addView(action("Открыть класс") { selectedClassId = item.id; course = null; renderResults() })
+                addView(action("Открыть класс") { selectedClassId = item.id; course = null; studentsMode = false; students = null; selectedStudent = null; renderResults() })
             } }
             results.addView(action("Обновить список", false) { refresh() })
             return
         }
-        results.addView(action("Все классы", false) { selectedClassId = null; course = null; renderResults() })
+        results.addView(action("Все классы", false) { selectedClassId = null; course = null; studentsMode = false; selectedStudent = null; students = null; renderResults() })
         results.addView(text(selected.name, 26, true))
         results.addView(text("Ведущий: ${selected.leader}\n${selected.schedule()}", 15, muted = true))
         if (selected.place.isNotBlank()) results.addView(text(selected.place, 15))
         if (selected.archived) results.addView(text("Архивный класс · только чтение", 16, true))
         else if (uid() !in selected.members) results.addView(text("Вы управляете классом. Для собственных ответов нужно членство в нём.", 15))
+        if (selected.canManage) {
+            results.addView(action(if (studentsMode) "Программа класса" else "Ученики и их ответы", false) {
+                studentsMode = !studentsMode; selectedStudent = null; course = null; renderResults()
+            })
+            if (studentsMode) { renderStudents(selected); return }
+        }
         val program = selected.lessonSlugs.mapNotNull { slug -> lessons.find { it.slug == slug } }
         if (program.size != selected.lessonSlugs.size) results.addView(text("Часть уроков отсутствует в материалах телефона. Обновите материалы в настройках.", 15))
         if (selected.lessonSlugs.isEmpty()) { results.addView(text("Ведущий ещё не добавил уроки в программу.", 18)); return }
@@ -183,6 +200,76 @@ class MainActivity : BaseActivity() {
             results.addView(action("Курсы класса", false) { course = null; renderResults() })
             results.addView(text(Courses.name(course!!), 22, true))
             program.filter { it.course == course }.forEach { lessonCard(it, selected) }
+        }
+    }
+    private fun renderStudents(group: StudyClass) {
+        results.addView(text("Ученики · ${group.members.size}", 22, true))
+        rosterError?.let {
+            results.addView(text(it, 16))
+            results.addView(action("Повторить") { rosterError = null; students = null; renderResults() })
+            return
+        }
+        val roster = students
+        if (roster == null) {
+            results.addView(text("Загрузка учеников и ответов класса…", 16))
+            if (!rosterLoading) {
+                rosterLoading = true
+                val request = generation
+                val owner = uid()
+                lifecycleScope.launch {
+                    try {
+                        check(SyncEngine.connected(this@MainActivity, prefs.unmetered))
+                        val loaded = withTimeout(30_000) { ClassRepository().roster(owner, group.id) }
+                        if (owner != uid() || generation != request || selectedClassId != group.id) return@launch
+                        students = loaded
+                    } catch (e: CancellationException) {
+                        if (e !is kotlinx.coroutines.TimeoutCancellationException) throw e
+                        if (owner == uid() && generation == request && selectedClassId == group.id)
+                            rosterError = "Сервер не ответил. Повторите загрузку."
+                    } catch (e: Exception) {
+                        if (owner == uid() && generation == request && selectedClassId == group.id)
+                            rosterError = "Не удалось загрузить учеников. Проверьте сеть и права ведущего."
+                    } finally {
+                        if (generation == request && selectedClassId == group.id) {
+                            rosterLoading = false
+                            if (classTab && studentsMode) renderResults()
+                        }
+                    }
+                }
+            }
+            return
+        }
+        if (roster.isEmpty()) { results.addView(text("В классе пока нет учеников.", 18)); return }
+        val student = selectedStudent
+        if (student == null) {
+            roster.forEach { item -> card(results) {
+                addView(text(item.name, 20, true))
+                addView(text("Уроков с ответами: ${item.answeredSlugs.size} из ${group.lessonSlugs.size}", 14))
+                addView(action("Курсы и ответы", false) { selectedStudent = item; course = null; renderResults() })
+            } }
+            results.addView(action("Обновить ответы", false) { students = null; renderResults() })
+            return
+        }
+        results.addView(action("Все ученики", false) { selectedStudent = null; course = null; renderResults() })
+        results.addView(text(student.name, 24, true))
+        val program = group.lessonSlugs.mapNotNull { slug -> lessons.find { it.slug == slug } }
+        if (course == null) {
+            program.groupBy { it.course }.forEach { (id, items) -> card(results) {
+                addView(text(Courses.name(id), 21, true))
+                addView(text("С ответами: ${items.count { it.slug in student.answeredSlugs }} из ${items.size}", 14))
+                addView(action("Открыть курс", false) { course = id; renderResults() })
+            } }
+        } else {
+            results.addView(action("Курсы ученика", false) { course = null; renderResults() })
+            program.filter { it.course == course }.forEach { lesson -> card(results) {
+                addView(text(lesson.title, 20, true))
+                addView(text(if (lesson.slug in student.answeredSlugs) "Есть ответы" else "Ответов пока нет", 14))
+                addView(action("Посмотреть ответы", false) {
+                    startActivity(Intent(this@MainActivity, LessonActivity::class.java)
+                        .putExtra("slug", lesson.slug).putExtra("classId", group.id)
+                        .putExtra("studentUid", student.uid).putExtra("studentName", student.name))
+                })
+            } }
         }
     }
     private fun courseCards(selected: List<Lesson>) {

@@ -23,14 +23,14 @@ jobs:
       - name: Give the diagnostic copy its own package and label
         run: |
           cat >> android/app/build.gradle <<'GRADLE'
-          android.buildTypes.debug.applicationIdSuffix = '.diagnostic'
-          android.defaultConfig.versionName = '0.2.1-diagnostic'
+          android.buildTypes.debug.applicationIdSuffix = '.classpreview'
+          android.defaultConfig.versionName = '0.3.0-class-preview'
           GRADLE
           python3 - <<'PY'
           from pathlib import Path
           path = Path('android/app/src/main/AndroidManifest.xml')
           source = path.read_text()
-          source = source.replace('android:label="Изучение Библии"', 'android:label="Библия · Проверка"')
+          source = source.replace('android:label="Изучение Библии"', 'android:label="Библия · Класс"')
           path.write_text(source)
           PY
       - name: Build diagnostic APK

@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const {test,before,after,beforeEach}=require('node:test');
 const fs=require('node:fs');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
-const {doc,setDoc,getDoc,updateDoc,deleteDoc,collection,query,where,getDocs,serverTimestamp,Timestamp,writeBatch}=require('firebase/firestore');
+const {doc,setDoc,getDoc,updateDoc,deleteDoc,collection,query,where,getDocs,serverTimestamp,Timestamp,writeBatch,runTransaction}=require('firebase/firestore');
 let env;
 const db=uid=>env.authenticatedContext(uid).firestore();
 const makeClass=(leaderUid='leader-a',memberUids=['student-a'])=>({name:'Воскресный класс',leaderUid,leaderName:'Ведущий',weekday:0,time:'11:00',duration:60,startDate:'2026-09-06',timezone:'Europe/Moscow',place:'Зал',description:'',lessonSlugs:['ephesians-2'],memberUids,archived:false,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
@@ -155,4 +155,27 @@ test('accepted invitation cannot rejoin after removal',async()=>{
 test('archived class and demoted inviter invalidate pending invitations',async()=>{
  await seedInvite();await updateDoc(doc(db('leader-a'),'classes/class-a'),{archived:true,updatedAt:serverTimestamp()});await assertFails(claim(guest()));
  await updateDoc(doc(db('leader-a'),'classes/class-a'),{archived:false,updatedAt:serverTimestamp()});await updateDoc(doc(db('admin'),'users/leader-a'),{role:'user'});await assertFails(claim(guest()));
+});
+
+// Same read/transaction/write shape as the Android class synchronization protocol.
+test('Android class transaction is visible to leader and isolated from personal and other class answers', async()=>{
+ await env.withSecurityRulesDisabled(async ctx=>{
+  await setDoc(doc(ctx.firestore(),'classes','class-c'),makeClass('leader-b',['student-a']));
+  await setDoc(doc(ctx.firestore(),'classAnswers','class-c_student-a_ephesians-2'),{...answer('student-a','class-c'),q1:'other class'});
+ });
+ const client=db('student-a');
+ const result=await assertSucceeds(getDocs(query(collection(client,'classAnswers'),where('_uid','==','student-a'),where('_class','==','class-a'))));
+ assert.equal(result.size,1);
+ await assertSucceeds(runTransaction(client,async tx=>{
+  const group=await tx.get(doc(client,'classes','class-a'));
+  const ref=doc(client,'classAnswers','class-a_student-a_ephesians-2');
+  const current=await tx.get(ref);
+  assert.equal(group.data().archived,false);
+  assert.ok(group.data().memberUids.includes('student-a'));
+  assert.ok(current.exists());
+  tx.set(ref,{...answer(),q1:'Android class answer'});
+ }));
+ assert.equal((await getDoc(doc(db('leader-a'),'classAnswers','class-a_student-a_ephesians-2'))).data().q1,'Android class answer');
+ assert.equal((await getDoc(doc(client,'answers','student-a_ephesians-2'))).data().q1,'Личный ответ');
+ assert.equal((await getDoc(doc(client,'classAnswers','class-c_student-a_ephesians-2'))).data().q1,'other class');
 });
