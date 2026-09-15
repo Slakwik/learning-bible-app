@@ -29,7 +29,7 @@ class LessonActivity : BaseActivity() {
     private val reviewing: Boolean get() = studentUid != null
     private var reviewRecord: AnswerRecord? = null
     private var studyClass: StudyClass? = null
-    private val canWrite: Boolean get() = !reviewing && (classId == null || studyClass?.canWrite(owner, lesson.slug) == true)
+    private val canWrite: Boolean get() = LessonAccess.canWrite(owner, lesson.slug, studyClass, reviewing)
     private fun positionKey() = classId?.let { "class:$it:${studentUid ?: owner}:${lesson.slug}" } ?: lesson.slug
     private var loading = false
     private var editingSession = false
@@ -50,8 +50,8 @@ class LessonActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         val now = FirebaseAuth.getInstance().currentUser?.uid ?: AnswerStore.GUEST
-        if (now != owner) { finish(); return }
-        if (!editingSession) { EditorSessions.count.incrementAndGet(); editingSession = true }
+        if (now == AnswerStore.GUEST || now != owner) { finish(); return }
+        if (classId != null && !editingSession) { EditorSessions.count.incrementAndGet(); editingSession = true }
         if (prefs.keepAwake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         load()
@@ -92,14 +92,13 @@ class LessonActivity : BaseActivity() {
             val result = runCatching {
                 val item = LessonRepository(appContext).get(intent.getStringExtra("slug").orEmpty())
                     ?: error("Урок не найден")
-                item to (if (reviewing) checkNotNull(reviewRecord) else AnswerStore.get(appContext).record(owner, item.slug, classId))
+                item to (if (classId == null) null else if (reviewing) checkNotNull(reviewRecord) else AnswerStore.get(appContext).record(owner, item.slug, classId))
             }
             runOnUiThread {
                 loading = false
                 if (isDestroyed || isFinishing || owner != (FirebaseAuth.getInstance().currentUser?.uid ?: AnswerStore.GUEST)) return@runOnUiThread
                 result.onSuccess { (item, answers) ->
                     lesson = item; record = answers
-                    if (classId == null) prefs.remember(owner, lesson.slug)
                     build()
                 }.onFailure {
                     screen("Урок").addView(text("Не удалось открыть урок. Вернитесь в каталог и попробуйте ещё раз.", 18))
@@ -119,6 +118,29 @@ class LessonActivity : BaseActivity() {
     private fun build() {
         val content = screen(Courses.name(lesson.course))
         editorContent = content
+        if (classId == null) {
+            content.addView(text(lesson.title, 24, true))
+            content.addView(text(lesson.reference, 16, muted = true))
+            notice(content, "Ознакомление", "Здесь только вводный текст. Вопросы и ответы доступны в вашем классе.")
+            val preview = LessonAccess.blocks(owner != AnswerStore.GUEST, false, lesson.blocks)
+            preview.filterIsInstance<LessonBlock.Reading>().forEach { block ->
+                val view = text("", prefs.fontSize).apply {
+                    typeface = if (prefs.serif) Typeface.create("serif", Typeface.NORMAL) else Typeface.DEFAULT
+                    setLineSpacing(0f, if (prefs.roomy) 1.45f else 1.15f)
+                    setTextIsSelectable(true)
+                }
+                markdown.setMarkdown(view, block.markdown)
+                content.addView(view)
+            }
+            if (preview.isEmpty()) content.addView(text("В этом уроке нет вводного текста перед вопросами.", 16))
+            content.addView(action("Перейти в класс") {
+                startActivity(Intent(this, MainActivity::class.java).putExtra("destination", 2)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+                finish()
+            })
+            content.addView(action("Оформление", false) { launchSettings() })
+            return
+        }
         val saved = record ?: return
         content.addView(text(lesson.title, 24, true))
         content.addView(text(lesson.reference, 16, muted = true))
@@ -266,6 +288,7 @@ class LessonActivity : BaseActivity() {
         }
     }
     private fun resolve(remote: Boolean) {
+        if (!canWrite) return
         confirm("Выбрать эту версию?", if (remote) "Локальные ответы этого урока будут заменены показанной версией сайта. Перед заменой можно экспортировать обе версии в настройках."
             else "Ответы телефона будут подготовлены к отправке. Если сайт изменился снова, приложение ещё раз проверит конфликт.", "Выбрать") {
             LocalIo.executor.execute {

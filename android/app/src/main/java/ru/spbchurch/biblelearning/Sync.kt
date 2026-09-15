@@ -60,33 +60,33 @@ object SyncEngine {
         var conflicts = 0
         val problems = mutableListOf<String>()
         fun checkOwner() { check(FirebaseAuth.getInstance().currentUser?.uid == uid) { "Account changed" } }
-        suspend fun scope(studyClass: StudyClass?) {
-            val classId = studyClass?.id
+        suspend fun scope(studyClass: StudyClass) {
+            val classId = studyClass.id
             val db = FirebaseFirestore.getInstance()
-            val collection = db.collection(if (classId == null) "answers" else "classAnswers")
+            val collection = db.collection("classAnswers")
             var query = collection.whereEqualTo("_uid", uid)
-            if (classId != null) query = query.whereEqualTo("_class", classId)
+            query = query.whereEqualTo("_class", classId)
             val remote = query.get(Source.SERVER).await()
             checkOwner()
             val bySlug = remote.documents.mapNotNull { doc ->
                 val slug = doc.getString("_lesson") ?: return@mapNotNull null
-                val expected = if (classId == null) "${uid}_$slug" else "${classId}_${uid}_$slug"
+                val expected = "${classId}_${uid}_$slug"
                 if (doc.id != expected) return@mapNotNull null
                 slug to answers(doc.data)
             }.toMap()
             (bySlug.keys + local.records(uid, classId).map { it.slug }).forEach { slug ->
                 checkOwner()
-                if (studyClass == null || slug in studyClass.lessonSlugs || slug in bySlug)
+                if (slug in studyClass.lessonSlugs || slug in bySlug)
                     local.acceptRemote(uid, slug, bySlug[slug].orEmpty(), classId)
                 received++
             }
             local.records(uid, classId).filter { it.dirty || it.remoteConflict != null }.forEach { snapshot ->
                 checkOwner()
-                if (studyClass != null && !studyClass.canWrite(uid, snapshot.slug)) {
+                if (!studyClass.canWrite(uid, snapshot.slug)) {
                     problems += "«${studyClass.name}»: запись недоступна; черновики сохранены на телефоне."
                     return@forEach
                 }
-                val id = if (classId == null) "${uid}_${snapshot.slug}" else "${classId}_${uid}_${snapshot.slug}"
+                val id = "${classId}_${uid}_${snapshot.slug}"
                 val ref = collection.document(id)
                 val outcome = db.runTransaction { tx ->
                     checkOwner()
@@ -101,7 +101,7 @@ object SyncEngine {
                         data.putAll(merge.answers)
                         data["_uid"] = uid
                         data["_lesson"] = snapshot.slug
-                        if (classId != null) data["_class"] = classId
+                        data["_class"] = classId
                         data["_savedAt"] = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
                             .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
                         tx.set(ref, data)
@@ -118,7 +118,6 @@ object SyncEngine {
         }
         try {
             withTimeout(60_000) {
-                if (onlyClassId == null) scope(null)
                 val classes = if (onlyClassId == null) ClassRepository().available(uid)
                     else listOf(ClassRepository().get(uid, onlyClassId))
                 classes.forEach { studyClass ->

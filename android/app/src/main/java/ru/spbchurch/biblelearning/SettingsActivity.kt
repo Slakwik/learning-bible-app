@@ -61,8 +61,8 @@ class SettingsActivity : BaseActivity() {
         content.addLabel("АККАУНТ")
         card(content) {
             addView(text(user?.email ?: "Ваш аккаунт", 20, true))
-            addView(text(if (user == null) "Читайте и делайте заметки без входа. Гостевые черновики не отправляются на сайт."
-                else "Личные ответы синхронизируются с аккаунтом learning.spbchurch.ru.", 14, muted = true))
+            addView(text(if (user == null) "Без входа доступны только курсы и их описания. Для занятий войдите в аккаунт и откройте класс."
+                else "Ответы синхронизируются только в рамках ваших классов.", 14, muted = true))
             if (user == null) addView(action("Войти") { startActivity(Intent(this@SettingsActivity, LoginActivity::class.java)) })
             else {
                 addView(action("Сбросить пароль", false) {
@@ -125,7 +125,7 @@ class SettingsActivity : BaseActivity() {
             val counter = text("Проверяем локальные ответы…", 14)
             addView(counter)
             lifecycleScope.launch {
-                val records = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).allRecords(owner) }
+                val records = withContext(Dispatchers.IO) { AnswerStore.get(this@SettingsActivity).allRecords(owner).filter { it.classId != null } }
                 counter.text = "Уроков с изменениями: " + records.count { it.dirty } +
                     "\nКонфликтов: " + records.count { it.remoteConflict != null }
             }
@@ -150,7 +150,7 @@ class SettingsActivity : BaseActivity() {
                     render()
                 }
             }.apply { isEnabled = user != null && !busy })
-            addView(text("Личные ответы и ответы классов синхронизируются отдельно. При конфликте откройте соответствующий урок и выберите нужную версию.", 14, muted = true))
+            addView(text("Синхронизируются только ответы классов. Прежние личные и гостевые записи сохранены для экспорта и не отправляются. При конфликте откройте урок в классе.", 14, muted = true))
         }
         content.addLabel("КУРСЫ БЕЗ ИНТЕРНЕТА")
         card(content) {

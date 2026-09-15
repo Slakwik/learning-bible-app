@@ -113,11 +113,12 @@ class MainActivity : BaseActivity() {
     private fun build() {
         val content = screen(if (classTab) "Класс" else "Курсы", false)
         if (!classTab) {
-            notice(content, "Учиться в своём ритме", "${lessons.groupBy { it.course }.size} курс · ${lessons.size} уроков на телефоне")
-            val last = prefs.lastLesson(uid())?.let { slug -> lessons.find { it.slug == slug } }
-            if (last != null) listItem(content, "Продолжить изучение", last.title, R.drawable.ic_courses) { open(last) }
-            content.addView(text("Личные ответы — здесь. Занятия с группой — в разделе «Класс».", 14, muted = true))
-            val search = input(content, "Найти курс, урок или отрывок")
+            notice(content, "Знакомство с курсами", "Вопросы и ответы доступны в разделе «Класс».")
+            if (uid() == AnswerStore.GUEST) {
+                content.addView(text("Без входа доступны названия и описания курсов.", 14, muted = true))
+                content.addView(action("Войти") { startActivity(Intent(this, LoginActivity::class.java)) })
+            } else content.addView(text("В каталоге можно прочитать вводный текст до вопросов.", 14, muted = true))
+            val search = input(content, if (uid() == AnswerStore.GUEST) "Найти курс" else "Найти курс, урок или отрывок")
             search.setText(query)
             search.doAfterTextChanged { query = it.toString(); renderResults() }
         }
@@ -137,6 +138,21 @@ class MainActivity : BaseActivity() {
         if (!::results.isInitialized) return
         results.removeAllViews()
         if (classTab) { renderClasses(); return }
+        if (uid() == AnswerStore.GUEST) {
+            course = null
+            val selected = lessons.filter {
+                (Courses.name(it.course) + " " + CourseDescriptions.get(it.course)).contains(query.trim(), true)
+            }
+            selected.groupBy { it.course }.forEach { (id, items) ->
+                card(results) {
+                    addView(text(Courses.name(id), 22, true))
+                    addView(text(CourseDescriptions.get(id), 16))
+                    addView(text("Уроков в программе: ${items.size}", 14, muted = true))
+                }
+            }
+            if (selected.isEmpty()) results.addView(text("Ничего не найдено. Попробуйте другое слово.", 18))
+            return
+        }
         if (course != null) {
             results.addView(action("Все курсы", false) { course = null; renderResults() })
             results.addView(text(Courses.name(course!!), 24, true))
@@ -271,24 +287,25 @@ class MainActivity : BaseActivity() {
     private fun courseCards(selected: List<Lesson>) {
         results.addLabel("Курсы")
         selected.groupBy { it.course }.forEach { (id, items) ->
-            listItem(results, Courses.name(id), "Уроков в программе: ${items.size}") {
+            listItem(results, Courses.name(id), CourseDescriptions.get(id) + "\nУроков в программе: ${items.size}") {
                 course = id; renderResults()
             }
         }
     }
     private fun lessonCard(lesson: Lesson, studyClass: StudyClass?) {
-        val record = records.find { it.slug == lesson.slug && it.classId == studyClass?.id }
+        val record = if (studyClass == null) null else records.find { it.slug == lesson.slug && it.classId == studyClass.id }
         val status = when {
             record?.remoteConflict != null -> "Нужно сравнить две версии"
             record?.dirty == true -> "Ожидает отправки"
             record?.values?.isNotEmpty() == true -> "С ответами · ${record.values.size}"
             studyClass != null && !studyClass.canWrite(uid(), lesson.slug) -> "Только чтение"
             studyClass != null -> "Ответы класса"
-            else -> "Личное изучение"
+            else -> "Ознакомление · без вопросов"
         }
         listItem(results, lesson.title, lesson.reference, badge = status) { open(lesson, studyClass) }
     }
     private fun open(lesson: Lesson, studyClass: StudyClass? = null) {
+        if (uid() == AnswerStore.GUEST) return
         startActivity(Intent(this, LessonActivity::class.java).putExtra("slug", lesson.slug).putExtra("classId", studyClass?.id))
     }
 }
