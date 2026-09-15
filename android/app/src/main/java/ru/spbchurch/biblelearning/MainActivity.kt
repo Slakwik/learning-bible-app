@@ -120,12 +120,13 @@ class MainActivity : BaseActivity() {
             } else content.addView(text("В каталоге можно прочитать вводный текст до вопросов.", 14, muted = true))
             val search = input(content, if (uid() == AnswerStore.GUEST) "Найти курс" else "Найти курс, урок или отрывок")
             search.setText(query)
-            search.doAfterTextChanged { query = it.toString(); renderResults() }
+            search.doAfterTextChanged { query = it.toString(); renderResults(false) }
         }
         results = column()
         content.addView(results)
         navigation(if (classTab) 2 else 1) { destination ->
             if (destination == 3) launchSettings(rootDestination = true)
+            else if (destination == 4) launchBible()
             else {
                 classTab = destination == 2; course = null; selectedClassId = null
                 studentsMode = false; selectedStudent = null; students = null
@@ -134,8 +135,9 @@ class MainActivity : BaseActivity() {
         }
         renderResults()
     }
-    private fun renderResults() {
+    private fun renderResults(animate: Boolean = true) {
         if (!::results.isInitialized) return
+        if (animate) smoothContentChange(results)
         results.removeAllViews()
         if (classTab) { renderClasses(); return }
         if (uid() == AnswerStore.GUEST) {

@@ -13,7 +13,7 @@ sealed class LessonBlock {
 }
 data class Lesson(val slug: String, val title: String, val reference: String, val course: String,
                   val order: Int, val body: String) {
-    val blocks: List<LessonBlock> get() = LessonParser.blocks(body)
+    val blocks: List<LessonBlock> by lazy { LessonParser.blocks(body) }
     val questions get() = blocks.filterIsInstance<LessonBlock.Question>()
 }
 object LessonParser {

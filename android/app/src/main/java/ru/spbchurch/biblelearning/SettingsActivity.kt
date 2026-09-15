@@ -198,14 +198,15 @@ class SettingsActivity : BaseActivity() {
         content.addLabel("О ПРИЛОЖЕНИИ")
         card(content) {
             addView(text("Изучение Библии", 20, true))
-            addView(text("Версия " + BuildConfig.VERSION_NAME + " · Предварительная сборка", 14, muted = true))
+            addView(text("Версия " + BuildConfig.VERSION_NAME + " · " + if (BuildConfig.DEBUG) "Тестовая сборка" else "Релиз", 14, muted = true))
             addView(action("Открыть сайт", false) { openUrl("https://learning.spbchurch.ru/") })
             addView(action("Исходный проект сайта", false) { openUrl("https://github.com/Slakwik/bible-learning") })
             addView(action("Код Android-приложения", false) { openUrl("https://github.com/Slakwik/learning-bible-app") })
             addView(text("Материалы: Санкт-Петербургский Центр «Духовное Возрождение». Приложение связано с вашим аккаунтом на сайте.", 13, muted = true))
         }
         if (intent.getBooleanExtra("rootDestination", false)) navigation(3) { destination ->
-            startActivity(Intent(this, MainActivity::class.java).putExtra("destination", destination)
+            if (destination == 4) launchBible()
+            else startActivity(Intent(this, MainActivity::class.java).putExtra("destination", destination)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
             finish()
         }

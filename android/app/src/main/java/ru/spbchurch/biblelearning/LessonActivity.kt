@@ -54,6 +54,7 @@ class LessonActivity : BaseActivity() {
         if (classId != null && !editingSession) { EditorSessions.count.incrementAndGet(); editingSession = true }
         if (prefs.keepAwake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (!::lesson.isInitialized) screen("Урок").addView(text("Загрузка урока…", 18))
         load()
     }
     override fun onPause() {
@@ -120,7 +121,7 @@ class LessonActivity : BaseActivity() {
         editorContent = content
         if (classId == null) {
             content.addView(text(lesson.title, 24, true))
-            content.addView(text(lesson.reference, 16, muted = true))
+            content.addView(text(lesson.reference, 16, muted = true).also { linkBibleReferences(it) })
             notice(content, "Ознакомление", "Здесь только вводный текст. Вопросы и ответы доступны в вашем классе.")
             val preview = LessonAccess.blocks(owner != AnswerStore.GUEST, false, lesson.blocks)
             preview.filterIsInstance<LessonBlock.Reading>().forEach { block ->
@@ -130,6 +131,7 @@ class LessonActivity : BaseActivity() {
                     setTextIsSelectable(true)
                 }
                 markdown.setMarkdown(view, block.markdown)
+                    linkBibleReferences(view, BibleReferences.defaultBook(lesson.reference))
                 content.addView(view)
             }
             if (preview.isEmpty()) content.addView(text("В этом уроке нет вводного текста перед вопросами.", 16))
@@ -143,7 +145,7 @@ class LessonActivity : BaseActivity() {
         }
         val saved = record ?: return
         content.addView(text(lesson.title, 24, true))
-        content.addView(text(lesson.reference, 16, muted = true))
+        content.addView(text(lesson.reference, 16, muted = true).also { linkBibleReferences(it) })
         content.addView(text(studyClass?.let { "Класс: ${it.name} · Ведущий: ${it.leader}" }
             ?: "Урок класса", 15, true))
         if (reviewing) content.addView(text("Ответы ученика: ${intent.getStringExtra("studentName").orEmpty()} · только просмотр", 16, true))
@@ -191,11 +193,13 @@ class LessonActivity : BaseActivity() {
                         setPadding(0, dp(12), 0, dp(12))
                     }
                     markdown.setMarkdown(view, block.markdown)
+                    linkBibleReferences(view, BibleReferences.defaultBook(lesson.reference))
                     content.addView(view)
                 }
                 is LessonBlock.Question -> card(content) {
                     val label = HtmlCompat.fromHtml(block.label, HtmlCompat.FROM_HTML_MODE_LEGACY)
                     val prompt = text(label, prefs.fontSize, true)
+                    linkBibleReferences(prompt, BibleReferences.defaultBook(lesson.reference))
                     addView(prompt)
                     if (!canWrite) {
                         addView(text(saved.values[block.id]?.takeIf { it.isNotBlank() } ?: "Ответ пока не добавлен", prefs.fontSize))

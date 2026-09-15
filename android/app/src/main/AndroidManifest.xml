@@ -8,6 +8,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".LessonActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".BibleActivity" android:exported="false" />
         <activity android:name=".LoginActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".SettingsActivity" android:exported="false" />
     </application>

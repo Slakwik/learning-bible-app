@@ -67,7 +67,11 @@ open class BaseActivity : AppCompatActivity() {
     }
     protected fun screen(title: String, back: Boolean = true): LinearLayout {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        root = LinearLayout(this).apply {
+        val firstScreen = !::root.isInitialized
+        if (!firstScreen) {
+            smoothContentChange(root)
+            root.removeAllViews()
+        } else root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(palette().background)
         }
@@ -90,7 +94,7 @@ open class BaseActivity : AppCompatActivity() {
             }
         }
         root.addView(header, LinearLayout.LayoutParams(-1, -2))
-        setContentView(root)
+        if (firstScreen) setContentView(root)
         WindowCompat.getInsetsController(window, root).apply {
             val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
             isAppearanceLightStatusBars = light
@@ -122,7 +126,8 @@ open class BaseActivity : AppCompatActivity() {
             itemActiveIndicatorColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.primary_container))
             menu.add(0, 1, 0, "Курсы").setIcon(R.drawable.ic_courses)
             menu.add(0, 2, 1, "Класс").setIcon(R.drawable.ic_groups)
-            menu.add(0, 3, 2, "Настройки").setIcon(R.drawable.ic_settings)
+            menu.add(0, 4, 2, "Библия").setIcon(R.drawable.ic_book)
+            menu.add(0, 3, 3, "Настройки").setIcon(R.drawable.ic_settings)
             selectedItemId = selected
             setOnItemSelectedListener { item ->
                 if (item.itemId != selected) select(item.itemId)
@@ -135,6 +140,7 @@ open class BaseActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this).setTitle(title).setMessage(detail)
             .setNegativeButton("Отмена", null).setPositiveButton(action) { _, _ -> yes() }.show()
     }
+    fun launchBible() = startActivity(Intent(this, BibleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
     fun launchSettings(rootDestination: Boolean = false) = startActivity(Intent(this, SettingsActivity::class.java).putExtra("rootDestination", rootDestination))
 }
 
@@ -257,4 +263,15 @@ fun Context.notice(parent: LinearLayout, title: String, detail: String) {
         setCardBackgroundColor(ColorUtils.blendARGB(palette().background, palette().accent, .08f))
         strokeWidth = 0
     }
+}
+
+/** Framework transitions honour the device animation scale, including disabled animations. */
+fun smoothContentChange(container: android.view.ViewGroup) {
+    if (!container.isLaidOut || (android.os.Build.VERSION.SDK_INT >= 26 && !android.animation.ValueAnimator.areAnimatorsEnabled())) return
+    android.transition.TransitionManager.endTransitions(container)
+    android.transition.TransitionManager.beginDelayedTransition(container,
+        android.transition.Fade().apply {
+            duration = 180
+            interpolator = android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f)
+        })
 }
