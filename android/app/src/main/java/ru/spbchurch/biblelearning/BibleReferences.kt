@@ -79,34 +79,73 @@ object BibleReferences {
         BibleBook("3JN", "3 Иоанна", listOf("3 Иоанна", "3 Ин", "3 Иоан")),
         BibleBook("JUD", "Иуды", listOf("Иуды", "Иуд")),
         BibleBook("REV", "Откровение", listOf("Откровение", "Откр", "Откровения", "Апокалипсис")))
-    private fun normalize(value: String) = value.lowercase().replace(".", "").replace(Regex("\\s+"), "")
-    private val aliases = books.flatMap { book -> book.aliases.map { normalize(it) to book.code } }.toMap()
-    private val names = books.flatMap { it.aliases }.sortedByDescending { it.length }.joinToString("|") {
-        it.split(Regex("\\s+")).joinToString("\\s*") { part -> Regex.escape(part.removeSuffix(".")) + "\\.?" }
+    // No platform regex engine: Android 10 ICU and desktop JVM disagree on long patterns.
+    private val aliases = books.flatMap { book -> book.aliases.map { it to book.code } }
+        .sortedByDescending { it.first.length }
+    private fun space(text: String, start: Int): Int {
+        var i = start
+        while (i < text.length && text[i].isWhitespace()) i++
+        return i
     }
-    private const val point = "[0-9]{1,3}(?:\\s*[:.]\\s*[0-9]{1,3})?"
-    private const val location = "$point(?:\\s*[-–—]\\s*$point)?"
-    private val explicit = Regex("($names)\\s*($location)(?![0-9:])", RegexOption.IGNORE_CASE)
-    private val contextual = Regex("([0-9]{1,3}\\s*:\\s*[0-9]{1,3}(?:\\s*[-–—]\\s*$point)?)(?![0-9:])")
-    private fun valid(raw: String): String? {
-        val value = raw.replace(Regex("\\s+"), "").replace(':', '.').replace('–', '-').replace('—', '-')
-        val numbers = value.split('.', '-').mapNotNull { it.toIntOrNull() }
-        return value.takeIf { numbers.isNotEmpty() && numbers.all { n -> n in 1..176 } }
+    private fun matchName(text: String, start: Int, alias: String): Int? {
+        var i = start
+        for (part in alias.split(' ')) {
+            val word = part.trimEnd('.')
+            if (!text.regionMatches(i, word, 0, word.length, ignoreCase = true)) return null
+            i += word.length
+            if (text.getOrNull(i) == '.') i++
+            i = space(text, i)
+        }
+        return i
+    }
+    private data class Point(val end: Int, val chapter: Int, val verse: Int?) {
+        val value get() = chapter.toString() + (verse?.let { ".$it" } ?: "")
+    }
+    private fun number(text: String, start: Int): Pair<Int, Int>? {
+        var end = start
+        while (end < text.length && text[end] in '0'..'9') end++
+        if (end == start || end - start > 3) return null
+        val value = text.substring(start, end).toInt()
+        return if (value in 1..176) end to value else null
+    }
+    private fun point(text: String, start: Int): Point? {
+        val first = number(text, start) ?: return null
+        val separator = space(text, first.first)
+        if (text.getOrNull(separator) in listOf(':', '.')) {
+            val second = number(text, space(text, separator + 1))
+            if (second != null) return Point(second.first, first.second, second.second)
+            if (text.getOrNull(separator) == ':') return null
+        }
+        return Point(first.first, first.second, null)
+    }
+    private fun reference(text: String, start: Int, numbers: Int, book: String, requireVerse: Boolean = false): BibleReference? {
+        val first = point(text, numbers) ?: return null
+        if (requireVerse && first.verse == null) return null
+        var end = first.end
+        var location = first.value
+        val dash = space(text, end)
+        if (text.getOrNull(dash) in listOf('-', '–', '—')) {
+            val last = point(text, space(text, dash + 1)) ?: return null
+            end = last.end
+            location += "-" + last.value
+        }
+        if (text.getOrNull(end) == ':' || text.getOrNull(end)?.isDigit() == true) return null
+        return BibleReference(start, end, book, location)
     }
     fun find(text: String, defaultBook: String? = null): List<BibleReference> {
-        val named = explicit.findAll(text).mapNotNull { match ->
-            if (match.range.first > 0 && text[match.range.first - 1].isLetterOrDigit()) return@mapNotNull null
-            val book = aliases[normalize(match.groupValues[1])] ?: return@mapNotNull null
-            val loc = valid(match.groupValues[2]) ?: return@mapNotNull null
-            BibleReference(match.range.first, match.range.last + 1, book, loc)
-        }.toList()
-        val implied = if (defaultBook in books.map { it.code }) contextual.findAll(text).mapNotNull { match ->
-            if (match.range.first > 0 && text[match.range.first - 1].let { it.isLetterOrDigit() || it in "/:." }) return@mapNotNull null
-            if (named.any { match.range.first < it.end && match.range.last >= it.start }) return@mapNotNull null
-            val loc = valid(match.value) ?: return@mapNotNull null
-            BibleReference(match.range.first, match.range.last + 1, defaultBook!!, loc)
-        }.toList() else emptyList()
-        return (named + implied).sortedBy { it.start }
+        val result = mutableListOf<BibleReference>()
+        var i = 0
+        while (i < text.length) {
+            if (i > 0 && text[i - 1].isLetterOrDigit()) { i++; continue }
+            val named = aliases.firstNotNullOfOrNull { (alias, book) ->
+                val numbers = matchName(text, i, alias) ?: return@firstNotNullOfOrNull null
+                reference(text, i, numbers, book)
+            }
+            val found = named ?: if (defaultBook != null && books.any { it.code == defaultBook } &&
+                (i == 0 || text[i - 1] !in "/:.")) reference(text, i, i, defaultBook, requireVerse = true) else null
+            if (found == null) i++ else { result += found; i = found.end }
+        }
+        return result
     }
     fun defaultBook(reference: String): String? = find(reference).map { it.book }.distinct().singleOrNull()
 }
