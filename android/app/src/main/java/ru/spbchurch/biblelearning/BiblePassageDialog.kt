@@ -42,24 +42,22 @@ class BiblePassageDialog : DialogFragment() {
         }
         val attribution = host.text("", 13, muted = true)
         body.addView(passage); body.addView(attribution)
-        val publisher = host.action("Biblica", false) { (host as BaseActivity).openBibleUrl("https://www.biblica.com") }
-        publisher.visibility = View.GONE
-        body.addView(publisher)
         if (pages.size > 1) body.addView(host.text("Отрывок из нескольких глав: показываем главы целиком, по одной.", 13, muted = true))
         val scroll = ScrollView(host).apply {
             addView(body)
             isFillViewport = false
         }
         val frame = host.column().apply {
-            addView(scroll, LinearLayout.LayoutParams(-1, host.dp((resources.configuration.screenHeightDp - 200).coerceIn(180, 560))))
+            addView(scroll, LinearLayout.LayoutParams(-1, host.dp((resources.configuration.screenHeightDp - if (pages.size > 1) 320 else 220).coerceIn(140, 520))))
         }
         val dialog = MaterialAlertDialogBuilder(host).setTitle(title).setView(frame)
+            .setNeutralButton("Biblica") { _, _ -> (host as BaseActivity).openBibleUrl("https://www.biblica.com") }
             .setPositiveButton("Закрыть", null).setNegativeButton("Повторить", null).create()
         val controls = host.column()
         frame.addView(controls)
         fun load() {
             request?.cancel()
-            passage.text = ""; attribution.text = ""; publisher.visibility = View.GONE
+            passage.text = ""; attribution.text = ""
             scroll.scrollTo(0, 0)
             progress.visibility = View.VISIBLE
             status.text = "Загрузка отрывка…"
@@ -70,7 +68,6 @@ class BiblePassageDialog : DialogFragment() {
                     passage.text = result.text
                     attribution.text = result.attribution
                     status.text = "Новый русский перевод · ${result.reference}"
-                    publisher.visibility = View.VISIBLE
                 } catch (e: CancellationException) { throw e }
                 catch (e: BiblePassageException) {
                     status.text = e.message
