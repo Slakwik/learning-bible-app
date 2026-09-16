@@ -28,7 +28,16 @@ class BibleActivity : BaseActivity() {
     }
     private fun render() {
         val content = screen("Библия", false)
-        notice(content, "Библия онлайн", "Новый русский перевод · YouVersion · нужен интернет")
+        val preferences = Preferences(this)
+        val online = preferences.bibleTranslation == "nrt"
+        notice(content, "Библия", if (online) "Новый русский перевод · нужен интернет" else "Синодальный перевод · доступен без интернета")
+        content.addView(action("Перевод: " + if (online) "НРП · онлайн" else "Синодальный · офлайн", false) {
+            MaterialAlertDialogBuilder(this).setTitle("Перевод Библии")
+                .setSingleChoiceItems(arrayOf("Синодальный · без интернета", "Новый русский перевод · онлайн"), if (online) 1 else 0) { dialog, index ->
+                    preferences.bibleTranslation = if (index == 1) "nrt" else "synodal"
+                    dialog.dismiss(); render()
+                }.setNegativeButton("Отмена", null).show()
+        })
         content.addView(text("Выберите книгу и отрывок. Текст откроется поверх текущего экрана; ссылки в уроках используют то же окно.", 16))
         val book = BibleReferences.books[bookIndex.coerceIn(BibleReferences.books.indices)]
         val location = input(content, "Глава или глава:стихи")

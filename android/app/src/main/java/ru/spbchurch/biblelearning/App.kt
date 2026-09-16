@@ -32,6 +32,9 @@ object LocalIo {
 
 class Preferences(context: Context) {
     private val prefs = context.getSharedPreferences("settings_v2", Context.MODE_PRIVATE)
+    var bibleTranslation: String
+        get() = prefs.getString("bible_translation", "synodal")?.takeIf { it == "nrt" } ?: "synodal"
+        set(value) { prefs.edit().putString("bible_translation", if (value == "nrt") "nrt" else "synodal").apply() }
     var loginEmail: String
         get() = prefs.getString("login_email", "").orEmpty()
         set(value) { prefs.edit().putString("login_email", value).apply() }

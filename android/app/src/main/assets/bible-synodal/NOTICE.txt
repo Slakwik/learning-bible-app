@@ -1,0 +1,12 @@
+Синодальный перевод / Russian Synodal Bible (russyn)
+Public Domain / Общественное достояние
+Source: https://ebible.org/find/details.php?id=russyn
+Archive: https://ebible.org/Scriptures/russyn_vpl.zip
+Retrieved: 2026-09-16
+
+66 books; 1189 chapters; 31169 numbered verses.
+The source VPL edition contains Bible text only, without editorial notes,
+introductions or formatting. Verse text is retained verbatim; book identifiers
+are mapped to USFM and records are grouped into JSON chapters for local reading.
+Archive checksum and counts: manifest.json.
+Reproducible importer: android/tools/import-synodal.py.

@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 /** A native reader over the lesson; closing it leaves the editor and its scroll position intact. */
 class BiblePassageDialog : DialogFragment() {
-    internal var loader: BiblePassageLoader = YouVersionPassageLoader()
+    internal var loader: BiblePassageLoader? = null
     private var request: Job? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -27,6 +27,9 @@ class BiblePassageDialog : DialogFragment() {
         val pages = readingPages(reference)
         var page = savedInstanceState?.getInt("page", 0)?.coerceIn(pages.indices) ?: 0
         val prefs = Preferences(host)
+        val online = prefs.bibleTranslation == "nrt"
+        val translationName = if (online) "Новый русский перевод" else "Синодальный перевод"
+        val passageLoader = loader ?: if (online) YouVersionPassageLoader() else SynodalPassageLoader(host)
         val book = BibleReferences.books.first { it.code == reference.book }
         val title = "${book.name} ${reference.location.replace('.', ':')}"
         val body = host.column().apply { setPadding(host.dp(24), host.dp(8), host.dp(24), host.dp(16)) }
@@ -51,7 +54,7 @@ class BiblePassageDialog : DialogFragment() {
             addView(scroll, LinearLayout.LayoutParams(-1, host.dp((resources.configuration.screenHeightDp - if (pages.size > 1) 480 else 220).coerceIn(100, if (pages.size > 1) 320 else 520))))
         }
         val dialog = MaterialAlertDialogBuilder(host).setTitle(title).setView(frame)
-            .setNeutralButton("Biblica") { _, _ -> (host as BaseActivity).openBibleUrl("https://www.biblica.com") }
+            .setNeutralButton(if (online) "Biblica" else "Источник") { _, _ -> (host as BaseActivity).openBibleUrl(if (online) "https://www.biblica.com" else "https://ebible.org/find/details.php?id=russyn") }
             .setPositiveButton("Закрыть", null).setNegativeButton("Повторить", null).create()
         val controls = host.column()
         frame.addView(controls)
@@ -64,16 +67,16 @@ class BiblePassageDialog : DialogFragment() {
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)?.visibility = View.GONE
             request = lifecycleScope.launch {
                 try {
-                    val result = loader.load(pages[page])
+                    val result = passageLoader.load(pages[page])
                     passage.text = result.text
                     attribution.text = result.attribution
-                    status.text = "Новый русский перевод · ${result.reference}"
+                    status.text = "$translationName · ${result.reference}"
                 } catch (e: CancellationException) { throw e }
                 catch (e: BiblePassageException) {
                     status.text = e.message
                     dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)?.visibility = View.VISIBLE
                 } catch (_: Exception) {
-                    status.text = "Не удалось загрузить отрывок. Проверьте интернет и повторите."
+                    status.text = if (online) "Не удалось загрузить отрывок. Проверьте интернет и повторите." else "Не удалось открыть отрывок из встроенного перевода."
                     dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)?.visibility = View.VISIBLE
                 } finally { progress.visibility = View.GONE }
             }
