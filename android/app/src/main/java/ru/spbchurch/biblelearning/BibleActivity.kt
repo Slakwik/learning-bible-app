@@ -28,7 +28,7 @@ class BibleActivity : BaseActivity() {
     }
     private fun render() {
         val content = screen("Библия", false)
-        notice(content, "Библия онлайн", "Синодальный перевод на Bible.com · нужен интернет")
+        notice(content, "Библия онлайн", "Новый русский перевод · YouVersion · нужен интернет")
         content.addView(text("Выберите книгу и отрывок. Текст откроется поверх текущего экрана; ссылки в уроках используют то же окно.", 16))
         val book = BibleReferences.books[bookIndex.coerceIn(BibleReferences.books.indices)]
         val location = input(content, "Глава или глава:стихи")

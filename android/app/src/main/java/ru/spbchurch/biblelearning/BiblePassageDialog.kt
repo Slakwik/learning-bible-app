@@ -24,6 +24,8 @@ class BiblePassageDialog : DialogFragment() {
         val host = requireActivity()
         val reference = BibleReference(0, 0, requireArguments().getString("book")!!,
             requireArguments().getString("location")!!)
+        val pages = readingPages(reference)
+        var page = savedInstanceState?.getInt("page", 0)?.coerceIn(pages.indices) ?: 0
         val prefs = Preferences(host)
         val book = BibleReferences.books.first { it.code == reference.book }
         val title = "${book.name} ${reference.location.replace('.', ':')}"
@@ -40,6 +42,10 @@ class BiblePassageDialog : DialogFragment() {
         }
         val attribution = host.text("", 13, muted = true)
         body.addView(passage); body.addView(attribution)
+        val publisher = host.action("Biblica", false) { (host as BaseActivity).openBibleUrl("https://www.biblica.com") }
+        publisher.visibility = View.GONE
+        body.addView(publisher)
+        if (pages.size > 1) body.addView(host.text("Отрывок из нескольких глав: показываем главы целиком, по одной.", 13, muted = true))
         val scroll = ScrollView(host).apply {
             addView(body)
             isFillViewport = false
@@ -49,18 +55,22 @@ class BiblePassageDialog : DialogFragment() {
         }
         val dialog = MaterialAlertDialogBuilder(host).setTitle(title).setView(frame)
             .setPositiveButton("Закрыть", null).setNegativeButton("Повторить", null).create()
+        val controls = host.column()
+        frame.addView(controls)
         fun load() {
             request?.cancel()
-            passage.text = ""; attribution.text = ""
+            passage.text = ""; attribution.text = ""; publisher.visibility = View.GONE
+            scroll.scrollTo(0, 0)
             progress.visibility = View.VISIBLE
             status.text = "Загрузка отрывка…"
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)?.visibility = View.GONE
             request = lifecycleScope.launch {
                 try {
-                    val result = loader.load(reference)
+                    val result = loader.load(pages[page])
                     passage.text = result.text
                     attribution.text = result.attribution
-                    status.text = result.reference
+                    status.text = "Новый русский перевод · ${result.reference}"
+                    publisher.visibility = View.VISIBLE
                 } catch (e: CancellationException) { throw e }
                 catch (e: BiblePassageException) {
                     status.text = e.message
@@ -70,6 +80,15 @@ class BiblePassageDialog : DialogFragment() {
                     dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)?.visibility = View.VISIBLE
                 } finally { progress.visibility = View.GONE }
             }
+        }
+        if (pages.size > 1) {
+            val previous = host.action("Предыдущая глава", false) {}
+            val next = host.action("Следующая глава", false) {}
+            fun updateButtons() { previous.isEnabled = page > 0; next.isEnabled = page < pages.lastIndex }
+            previous.setOnClickListener { if (page > 0) { page--; updateButtons(); load() } }
+            next.setOnClickListener { if (page < pages.lastIndex) { page++; updateButtons(); load() } }
+            controls.addView(previous); controls.addView(next)
+            updateButtons()
         }
         dialog.setOnShowListener {
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setOnClickListener { load() }
