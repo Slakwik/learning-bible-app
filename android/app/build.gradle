@@ -25,7 +25,7 @@ android { namespace 'ru.spbchurch.biblelearning'; compileSdk 35
         }
     }
     sourceSets { main { assets.srcDir("$buildDir/generated/assets") } }
-    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 11; versionName '0.6.0'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'Изучение Библии'] }
+    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 12; versionName '0.6.1'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'Изучение Библии'] }
     defaultConfig {
         buildConfigField 'String', 'YOUVERSION_APP_KEY', groovy.json.JsonOutput.toJson(System.getenv('YOUVERSION_APP_KEY') ?: '')
         buildConfigField 'int', 'YOUVERSION_BIBLE_ID', (System.getenv('YOUVERSION_BIBLE_ID') ?: '143')

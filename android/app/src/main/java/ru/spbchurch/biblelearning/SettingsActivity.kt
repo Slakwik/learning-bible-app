@@ -108,7 +108,7 @@ class SettingsActivity : BaseActivity() {
             }
             addView(text("Пример текста", 12, true, true))
             addView(text("«Слово Твоё — светильник ноге моей и свет стезе моей».\nПсалом 118:105", prefs.fontSize).apply {
-                typeface = if (prefs.serif) Typeface.create("serif", Typeface.NORMAL) else Typeface.DEFAULT
+                typeface = context.readingTypeface(prefs.serif)
                 setLineSpacing(0f, if (prefs.roomy) 1.45f else 1.15f)
             })
             addView(action("Вернуть настройки чтения", false) {

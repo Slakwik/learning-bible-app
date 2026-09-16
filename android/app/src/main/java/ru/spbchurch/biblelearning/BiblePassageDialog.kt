@@ -39,7 +39,7 @@ class BiblePassageDialog : DialogFragment() {
         body.addView(status)
         val passage = host.text("", prefs.fontSize).apply {
             id = R.id.bible_passage_text
-            typeface = if (prefs.serif) Typeface.create("serif", Typeface.NORMAL) else Typeface.DEFAULT
+            typeface = context.readingTypeface(prefs.serif)
             setLineSpacing(0f, if (prefs.roomy) 1.45f else 1.2f)
             setTextIsSelectable(true)
         }

@@ -1,7 +1,10 @@
 <resources>
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowAnimationStyle">@style/AppWindowAnimation</item>
-        <item name="android:fontFamily">sans</item>
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="fontFamily">@font/inter</item>
+        <item name="textAppearanceHeadlineSmall">@style/ChurchHeading</item>
+        <item name="textAppearanceTitleLarge">@style/ChurchHeading</item>
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
@@ -16,6 +19,11 @@
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/background</item>
+    </style>
+    <style name="ChurchHeading" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/playfair</item>
+        <item name="fontFamily">@font/playfair</item>
+        <item name="android:textStyle">bold</item>
     </style>
     <style name="AppWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/screen_enter</item>

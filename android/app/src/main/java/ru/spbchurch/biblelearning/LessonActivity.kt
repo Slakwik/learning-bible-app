@@ -126,7 +126,7 @@ class LessonActivity : BaseActivity() {
             val preview = LessonAccess.blocks(owner != AnswerStore.GUEST, false, lesson.blocks)
             preview.filterIsInstance<LessonBlock.Reading>().forEach { block ->
                 val view = text("", prefs.fontSize).apply {
-                    typeface = if (prefs.serif) Typeface.create("serif", Typeface.NORMAL) else Typeface.DEFAULT
+                    typeface = context.readingTypeface(prefs.serif)
                     setLineSpacing(0f, if (prefs.roomy) 1.45f else 1.15f)
                     setTextIsSelectable(true)
                 }
@@ -187,7 +187,7 @@ class LessonActivity : BaseActivity() {
             when (block) {
                 is LessonBlock.Reading -> {
                     val view = text("", prefs.fontSize).apply {
-                        typeface = if (prefs.serif) Typeface.create("serif", Typeface.NORMAL) else Typeface.DEFAULT
+                        typeface = context.readingTypeface(prefs.serif)
                         setLineSpacing(0f, if (prefs.roomy) 1.45f else 1.15f)
                         setTextIsSelectable(true)
                         setPadding(0, dp(12), 0, dp(12))

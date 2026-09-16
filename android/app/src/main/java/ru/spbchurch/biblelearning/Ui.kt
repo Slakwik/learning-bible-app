@@ -35,10 +35,10 @@ data class Palette(val background: Int, val surface: Int, val ink: Int, val mute
 fun Context.palette(): Palette {
     val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     fun c(hex: String) = Color.parseColor(hex)
-    return if (dark) Palette(c("#151A18"), c("#202823"), c("#F0EEE6"), c("#B6C2B9"), c("#A7D4B5"), c("#153D29"))
-    else Palette(c(if (Preferences(this).theme == "paper") "#F3EAD8" else "#F8F7F2"),
-        c(if (Preferences(this).theme == "paper") "#FFF6E5" else "#FFFFFF"),
-        c("#202D25"), c("#58685E"), c("#285B42"), c("#FFFFFF"))
+    return if (dark) Palette(c("#101D30"), c("#192D47"), c("#F4F1EA"), c("#B6C2D3"), c("#E4B761"), c("#152B49"))
+    else Palette(c(if (Preferences(this).theme == "paper") "#F4EDDF" else "#FAFAF8"),
+        c(if (Preferences(this).theme == "paper") "#FFF9EE" else "#FFFFFF"),
+        c("#23334A"), c("#56657A"), c("#1A365D"), c("#FFFFFF"))
 }
 
 open class BaseActivity : AppCompatActivity() {
@@ -73,7 +73,7 @@ open class BaseActivity : AppCompatActivity() {
             root.removeAllViews()
         } else root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(palette().background)
+            setBackgroundColor(ContextCompat.getColor(context, R.color.navy))
         }
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() or
@@ -83,25 +83,27 @@ open class BaseActivity : AppCompatActivity() {
         }
         val header = MaterialToolbar(this).apply {
             this.title = title
-            setTitleTextColor(palette().ink)
-            setBackgroundColor(palette().background)
+            setTitleTextAppearance(context, R.style.ChurchHeading)
+            setTitleTextColor(Color.parseColor("#FFF9EE"))
+            setBackgroundColor(ContextCompat.getColor(context, R.color.navy))
             minimumHeight = dp(64)
             if (back) {
                 setNavigationIcon(R.drawable.ic_arrow_back)
-                setNavigationIconTint(palette().ink)
+                setNavigationIconTint(ContextCompat.getColor(context, R.color.gold))
                 navigationContentDescription = "Назад"
                 setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
             }
         }
         root.addView(header, LinearLayout.LayoutParams(-1, -2))
+        root.addView(View(this).apply { setBackgroundColor(ContextCompat.getColor(context, R.color.gold)) }, LinearLayout.LayoutParams(-1, dp(2)))
         if (firstScreen) setContentView(root)
         WindowCompat.getInsetsController(window, root).apply {
             val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
-            isAppearanceLightStatusBars = light
-            isAppearanceLightNavigationBars = light
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
         }
         ViewCompat.requestApplyInsets(root)
-        val scroll = ScrollView(this).apply { id = R.id.screen_scroll; isFillViewport = true }
+        val scroll = ScrollView(this).apply { id = R.id.screen_scroll; isFillViewport = true; setBackgroundColor(palette().background) }
         val horizontal = dp(maxOf(16, (resources.configuration.screenWidthDp - 640) / 2))
         val content = column().apply { setPadding(horizontal, dp(8), horizontal, dp(24)) }
         scroll.addView(content)
@@ -115,15 +117,15 @@ open class BaseActivity : AppCompatActivity() {
     protected fun navigation(selected: Int, select: (Int) -> Unit) {
         val bar = BottomNavigationView(this).apply {
             id = R.id.bottom_navigation
-            setBackgroundColor(ContextCompat.getColor(context, R.color.surface_container))
+            setBackgroundColor(ContextCompat.getColor(context, R.color.navy))
             labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
             itemIconSize = dp(24)
             minimumHeight = dp(80)
             val colors = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(palette().accent, palette().muted))
+                intArrayOf(ContextCompat.getColor(context, R.color.gold), Color.parseColor("#CDD7E5")))
             itemIconTintList = colors
             itemTextColor = colors
-            itemActiveIndicatorColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.primary_container))
+            itemActiveIndicatorColor = ColorStateList.valueOf(Color.parseColor("#304968"))
             menu.add(0, 1, 0, "Курсы").setIcon(R.drawable.ic_courses)
             menu.add(0, 2, 1, "Класс").setIcon(R.drawable.ic_groups)
             menu.add(0, 4, 2, "Библия").setIcon(R.drawable.ic_book)
@@ -150,7 +152,7 @@ fun Context.text(value: CharSequence, size: Int = 16, bold: Boolean = false, mut
         text = value
         textSize = size.toFloat()
         setTextColor(if (muted) palette().muted else palette().ink)
-        if (bold) typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        typeface = Typeface.create(androidx.core.content.res.ResourcesCompat.getFont(context, if (bold && size >= 20) R.font.playfair else R.font.inter), if (bold) Typeface.BOLD else Typeface.NORMAL)
         setLineSpacing(0f, 1.2f)
         setPadding(0, dp(4), 0, dp(4))
         if (bold && size >= 20) ViewCompat.setAccessibilityHeading(this, true)
@@ -166,14 +168,15 @@ fun Context.action(label: String, primary: Boolean = true, click: () -> Unit) =
         insetTop = 0
         insetBottom = 0
         setPadding(dp(20), dp(12), dp(20), dp(12))
-        cornerRadius = dp(24)
+        cornerRadius = dp(12)
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(4) }
         if (primary) {
             backgroundTintList = ColorStateList.valueOf(palette().accent)
             setTextColor(palette().onAccent)
         } else {
             setTextColor(palette().accent)
-            strokeWidth = 0
+            strokeWidth = dp(1)
+            strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gold))
         }
         setOnClickListener { click() }
     }
@@ -222,7 +225,8 @@ fun Context.listItem(parent: LinearLayout, title: String, detail: String, icon: 
     val item = MaterialCardView(this).apply {
         radius = dp(16).toFloat()
         cardElevation = 0f
-        strokeWidth = 0
+        strokeWidth = dp(1)
+            strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gold))
         setCardBackgroundColor(palette().surface)
         isClickable = true
         isFocusable = true
@@ -261,7 +265,8 @@ fun Context.notice(parent: LinearLayout, title: String, detail: String) {
     }
     (inner.parent as MaterialCardView).apply {
         setCardBackgroundColor(ColorUtils.blendARGB(palette().background, palette().accent, .08f))
-        strokeWidth = 0
+        strokeWidth = dp(1)
+            strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gold))
     }
 }
 
@@ -275,3 +280,6 @@ fun smoothContentChange(container: android.view.ViewGroup) {
             interpolator = android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f)
         })
 }
+
+fun Context.readingTypeface(serif: Boolean): Typeface =
+    androidx.core.content.res.ResourcesCompat.getFont(this, if (serif) R.font.playfair else R.font.inter) ?: Typeface.DEFAULT
