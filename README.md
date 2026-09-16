@@ -2,7 +2,7 @@
 
 ## Android-приложение
 
-[Скачать тестовый APK 0.6.0](https://github.com/Slakwik/learning-bible-app/releases/tag/v0.6.0) · [План улучшений](docs/android-roadmap.md)
+[Скачать тестовый APK 0.6.1](https://github.com/Slakwik/learning-bible-app/releases/tag/v0.6.1) · [План улучшений](docs/android-roadmap.md)
 
 Этот репозиторий содержит предварительную нативную Android-версию проекта. Оригинальный веб-сайт и исходный проект: [Slakwik/bible-learning](https://github.com/Slakwik/bible-learning). Описание приложения, настройки, проверки и ограничения: [android/README.md](android/README.md).
 
