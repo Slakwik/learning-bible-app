@@ -25,7 +25,11 @@ android { namespace 'ru.spbchurch.biblelearning'; compileSdk 35
         }
     }
     sourceSets { main { assets.srcDir("$buildDir/generated/assets") } }
-    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 9; versionName '0.4.3'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'Изучение Библии'] }
+    defaultConfig { applicationId 'ru.spbchurch.biblelearning'; minSdk 23; targetSdk 35; versionCode 10; versionName '0.5.0'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'Изучение Библии'] }
+    defaultConfig {
+        buildConfigField 'String', 'YOUVERSION_APP_KEY', groovy.json.JsonOutput.toJson(System.getenv('YOUVERSION_APP_KEY') ?: '')
+        buildConfigField 'int', 'YOUVERSION_BIBLE_ID', (System.getenv('YOUVERSION_BIBLE_ID') ?: '143')
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = '17' }
     buildFeatures { buildConfig true }
@@ -35,6 +39,7 @@ android { namespace 'ru.spbchurch.biblelearning'; compileSdk 35
 tasks.named('preBuild').configure { dependsOn(copyLessons) }
 
 dependencies {
+    implementation 'org.jsoup:jsoup:1.18.3'
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'

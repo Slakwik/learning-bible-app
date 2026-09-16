@@ -28,8 +28,8 @@ class BibleActivity : BaseActivity() {
     }
     private fun render() {
         val content = screen("Библия", false)
-        notice(content, "Библия онлайн", "Синодальный перевод на Bible.com · нужен интернет")
-        content.addView(text("Выберите книгу и отрывок. Ссылки в уроках также открывают нужное место на Bible.com.", 16))
+        notice(content, "Библия онлайн", "Новый русский перевод · YouVersion · нужен интернет")
+        content.addView(text("Выберите книгу и отрывок. Текст откроется поверх текущего экрана; ссылки в уроках используют то же окно.", 16))
         val book = BibleReferences.books[bookIndex.coerceIn(BibleReferences.books.indices)]
         val location = input(content, "Глава или глава:стихи")
         location.setText(passage)
@@ -44,8 +44,8 @@ class BibleActivity : BaseActivity() {
                     bookIndex = index; dialog.dismiss(); render()
                 }.setNegativeButton("Отмена", null).show()
         })
-        content.addView(text("Например: 3, 3:16 или 3:16–18. Для отрывков из нескольких глав можно открыть начало или конец.", 14, muted = true))
-        content.addView(action("Открыть на Bible.com") {
+        content.addView(text("Например: 3, 3:16 или 3:16–18. Текст можно прокручивать и выделять в окне чтения.", 14, muted = true))
+        content.addView(action("Открыть отрывок") {
             val query = book.name + " " + passage.trim()
             val reference = BibleReferences.find(query).singleOrNull()?.takeIf { it.start == 0 && it.end == query.length }
             if (reference == null) location.error = "Укажите главу или отрывок, например 3:16–18"
@@ -66,13 +66,9 @@ fun BaseActivity.openBibleUrl(url: String) {
     catch (_: ActivityNotFoundException) { message("Не найден браузер для открытия Bible.com.") }
 }
 fun BaseActivity.openBible(reference: BibleReference) {
-    val endpoints = reference.endpoints
-    if (endpoints.size == 1) openBibleUrl(reference.url)
-    else MaterialAlertDialogBuilder(this).setTitle("Отрывок из нескольких глав")
-        .setItems(arrayOf("Открыть начало: ${endpoints.first()}", "Открыть конец: ${endpoints.last()}")) { _, index ->
-            openBibleUrl("https://www.bible.com/bible/167/${reference.book}.${endpoints[index]}")
-        }.setNegativeButton("Отмена", null).show()
+    BiblePassageDialog.show(this, reference)
 }
+
 fun BaseActivity.linkBibleReferences(view: TextView, defaultBook: String? = null) {
     val linked = SpannableString(view.text)
     BibleReferences.find(linked.toString(), defaultBook).forEach { ref ->
