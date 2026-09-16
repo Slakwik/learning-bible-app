@@ -48,7 +48,7 @@ class BiblePassageDialog : DialogFragment() {
             isFillViewport = false
         }
         val frame = host.column().apply {
-            addView(scroll, LinearLayout.LayoutParams(-1, host.dp((resources.configuration.screenHeightDp - if (pages.size > 1) 320 else 220).coerceIn(140, 520))))
+            addView(scroll, LinearLayout.LayoutParams(-1, host.dp((resources.configuration.screenHeightDp - if (pages.size > 1) 480 else 220).coerceIn(100, if (pages.size > 1) 320 else 520))))
         }
         val dialog = MaterialAlertDialogBuilder(host).setTitle(title).setView(frame)
             .setNeutralButton("Biblica") { _, _ -> (host as BaseActivity).openBibleUrl("https://www.biblica.com") }
