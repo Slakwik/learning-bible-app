@@ -98,7 +98,6 @@ open class BaseActivity : AppCompatActivity() {
         root.addView(View(this).apply { setBackgroundColor(ContextCompat.getColor(context, R.color.gold)) }, LinearLayout.LayoutParams(-1, dp(2)))
         if (firstScreen) setContentView(root)
         WindowCompat.getInsetsController(window, root).apply {
-            val light = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
             isAppearanceLightStatusBars = false
             isAppearanceLightNavigationBars = false
         }
@@ -226,7 +225,7 @@ fun Context.listItem(parent: LinearLayout, title: String, detail: String, icon: 
         radius = dp(16).toFloat()
         cardElevation = 0f
         strokeWidth = dp(1)
-            strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gold))
+        strokeColor = ContextCompat.getColor(context, R.color.gold)
         setCardBackgroundColor(palette().surface)
         isClickable = true
         isFocusable = true
@@ -266,7 +265,7 @@ fun Context.notice(parent: LinearLayout, title: String, detail: String) {
     (inner.parent as MaterialCardView).apply {
         setCardBackgroundColor(ColorUtils.blendARGB(palette().background, palette().accent, .08f))
         strokeWidth = dp(1)
-            strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gold))
+        strokeColor = ContextCompat.getColor(context, R.color.gold)
     }
 }
 
